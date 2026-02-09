@@ -1,0 +1,39 @@
+# Java
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven
+/target/
+
+# IDEs
+/.idea/
+/.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+
+# Misc
+*.swp
+*.swo
+
+# Test output
+/test-output/
+
+# Spring Boot
+*.pid
+
+# Postman
+AgroConnect.postman_collection.json
+
+# Exclude sensitive files
+application.properties
