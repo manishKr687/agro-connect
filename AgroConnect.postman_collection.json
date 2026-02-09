@@ -1,0 +1,247 @@
+{
+  "info": {
+    "_postman_id": "b2b-veg-supplychain-mvp",
+    "name": "AgroConnect API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+    "item": [
+      {
+        "name": "Register ADMIN",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Admin User\",\n  \"role\": \"ADMIN\",\n  \"phone\": \"9000000001\",\n  \"passwordHash\": \"adminpass\",\n  \"languagePreference\": \"en\"\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8081/auth/register",
+            "host": ["localhost"],
+            "port": "8081",
+            "path": ["auth", "register"]
+          }
+        }
+      },
+      {
+        "name": "Register FARMER",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Farmer User\",\n  \"role\": \"FARMER\",\n  \"phone\": \"9000000002\",\n  \"passwordHash\": \"farmerpass\",\n  \"languagePreference\": \"en\"\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8081/auth/register",
+            "host": ["localhost"],
+            "port": "8081",
+            "path": ["auth", "register"]
+          }
+        }
+      },
+      {
+        "name": "Register MEDIATOR",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Mediator User\",\n  \"role\": \"MEDIATOR\",\n  \"phone\": \"9000000003\",\n  \"passwordHash\": \"mediatorpass\",\n  \"languagePreference\": \"en\"\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8081/auth/register",
+            "host": ["localhost"],
+            "port": "8081",
+            "path": ["auth", "register"]
+          }
+        }
+      },
+      {
+        "name": "Register RETAILER",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Retailer User\",\n  \"role\": \"RETAILER\",\n  \"phone\": \"9000000004\",\n  \"passwordHash\": \"retailerpass\",\n  \"languagePreference\": \"en\"\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8081/auth/register",
+            "host": ["localhost"],
+            "port": "8081",
+            "path": ["auth", "register"]
+          }
+        }
+      },
+      
+    {
+      "name": "Login ADMIN",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"9000000001\",\n  \"passwordHash\": \"adminpass\"\n}"
+        },
+        "url": { "raw": "http://localhost:8081/auth/login", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["auth", "login"] }
+      }
+    },
+    {
+      "name": "Login FARMER",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"9000000002\",\n  \"passwordHash\": \"farmerpass\"\n}"
+        },
+        "url": { "raw": "http://localhost:8081/auth/login", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["auth", "login"] }
+      }
+    },
+    {
+      "name": "Login MEDIATOR",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"9000000003\",\n  \"passwordHash\": \"mediatorpass\"\n}"
+        },
+        "url": { "raw": "http://localhost:8081/auth/login", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["auth", "login"] }
+      }
+    },
+    {
+      "name": "Login RETAILER",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"9000000004\",\n  \"passwordHash\": \"retailerpass\"\n}"
+        },
+        "url": { "raw": "http://localhost:8081/auth/login", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["auth", "login"] }
+      }
+    },
+    {
+      "name": "Add Harvest",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"farmer\": {\"id\": 1},\n  \"vegetableType\": \"Tomato\",\n  \"quantity\": 100,\n  \"harvestDate\": \"2026-02-10\",\n  \"expectedPrice\": 25.5,\n  \"status\": \"PENDING\"\n}"
+        },
+        "url": { "raw": "http://localhost:8081/harvests", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["harvests"] }
+      }
+    },
+    {
+      "name": "List Harvests",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "http://localhost:8080/harvests", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["harvests"] }
+      }
+    },
+    {
+      "name": "Add Demand",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"retailer\": {\"id\": 2},\n  \"vegetableType\": \"Tomato\",\n  \"quantity\": 50,\n  \"requiredDate\": \"2026-02-11\",\n  \"status\": \"PENDING\"\n}"
+        },
+        "url": { "raw": "http://localhost:8081/demands", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["demands"] }
+      }
+    },
+    {
+      "name": "List Demands",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "http://localhost:8081/demands", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["demands"] }
+      }
+    },
+    {
+      "name": "Create Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:8081/orders/create?harvestId=1&demandId=1&adminId=3&normalizedPrice=25.0&mediatorId=4",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["orders", "create"],
+          "query": [
+            { "key": "harvestId", "value": "1" },
+            { "key": "demandId", "value": "1" },
+            { "key": "adminId", "value": "3" },
+            { "key": "normalizedPrice", "value": "25.0" },
+            { "key": "mediatorId", "value": "4" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "List Orders",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "http://localhost:8081/orders", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["orders"] }
+      }
+    },
+    {
+      "name": "Collect Order",
+      "request": {
+        "method": "POST",
+        "url": { "raw": "http://localhost:8081/mediator/collect/1", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["mediator", "collect", "1"] }
+      }
+    },
+    {
+      "name": "Deliver Order",
+      "request": {
+        "method": "POST",
+        "url": { "raw": "http://localhost:8081/mediator/deliver/1", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["mediator", "deliver", "1"] }
+      }
+    },
+    {
+      "name": "List Assigned Orders",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "http://localhost:8081/mediator/assigned/4", "protocol": "http", "host": ["localhost"], "port": "8081", "path": ["mediator", "assigned", "4"] }
+      }
+    }
+  ]
+}
