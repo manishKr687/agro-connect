@@ -1,7 +1,7 @@
 package com.agroconnect.controller;
 
-import com.agroconnect.model.User;
-import com.agroconnect.repository.UserRepository;
+// ...existing code...
+// ...existing code...
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -17,20 +17,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class AuthControllerTest {
     @Autowired
     private MockMvc mockMvc;
-    @Autowired
-    private UserRepository userRepository;
+    // ...existing code...
 
     @Test
     void testRegisterUser() throws Exception {
+        String uniquePhone = "99999" + System.currentTimeMillis();
         String userJson = "{" +
-                "\"name\":\"Test User\"," +
-                "\"role\":\"FARMER\"," +
-                "\"phone\":\"9999999999\"," +
-                "\"passwordHash\":\"password\"," +
-                "\"languagePreference\":\"en\"}";
-        mockMvc.perform(post("/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(userJson))
-                .andExpect(status().isOk());
+            "\"name\":\"Test User\"," +
+            "\"phone\":\"" + uniquePhone + "\"," +
+            "\"passwordHash\":\"password\"," +
+            "\"languagePreference\":\"en\"}";
+        mockMvc.perform(post("/api/register/farmer")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(userJson))
+            .andExpect(status().isOk());
     }
 }

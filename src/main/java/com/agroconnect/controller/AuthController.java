@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
     @Autowired
     private UserRepository userRepository;
@@ -18,12 +18,7 @@ public class AuthController {
     private PasswordEncoder passwordEncoder;
 
 
-    @PostMapping("/register")
-    public String register(@RequestBody User user) {
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
-        userRepository.save(user);
-        return "User registered successfully";
-    }
+    // ...existing code...
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -36,6 +31,7 @@ public class AuthController {
         if (passwordEncoder.matches(user.getPasswordHash(), dbUser.getPasswordHash())) {
             String token = jwtUtil.generateToken(dbUser.getPhone(), dbUser.getRole().name());
             response.put("token", token);
+            response.put("role", dbUser.getRole().name());
             response.put("message", "Login successful");
         } else {
             response.put("message", "Invalid credentials");

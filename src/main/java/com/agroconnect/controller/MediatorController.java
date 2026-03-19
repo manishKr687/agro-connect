@@ -10,12 +10,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/mediator")
+@RequestMapping("/api/mediator")
 public class MediatorController {
     @Autowired
     private OrderRepository orderRepository;
 
     // Mediator updates collection and delivery status
+
     @PreAuthorize("hasRole('MEDIATOR')")
     @PostMapping("/collect/{orderId}")
     public Order collectOrder(@PathVariable Long orderId) {
@@ -25,6 +26,7 @@ public class MediatorController {
         return orderRepository.save(order);
     }
 
+
     @PreAuthorize("hasRole('MEDIATOR')")
     @PostMapping("/deliver/{orderId}")
     public Order deliverOrder(@PathVariable Long orderId) {
@@ -33,6 +35,7 @@ public class MediatorController {
         order.setDeliveredAt(LocalDateTime.now());
         return orderRepository.save(order);
     }
+
 
     @PreAuthorize("hasRole('MEDIATOR')")
     @GetMapping("/assigned/{mediatorId}")

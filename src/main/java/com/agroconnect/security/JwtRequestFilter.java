@@ -1,6 +1,6 @@
 package com.agroconnect.security;
 
-import com.agroconnect.repository.UserRepository;
+// ...existing code...
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,8 +18,7 @@ import java.io.IOException;
 public class JwtRequestFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
-    @Autowired
-    private UserRepository userRepository;
+    // Removed unused UserRepository
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
