@@ -19,14 +19,15 @@ public class Demand {
     @JoinColumn(name = "retailer_id")
     private User retailer;
 
-    private String vegetableType;
+    private String cropName;
     private Double quantity;
     private LocalDate requiredDate;
+    private Double targetPrice;
 
     @Enumerated(EnumType.STRING)
     private Status status;
 
     public enum Status {
-        PENDING, MATCHED, COMPLETED
+        OPEN, RESERVED, FULFILLED, CANCELLED
     }
 }

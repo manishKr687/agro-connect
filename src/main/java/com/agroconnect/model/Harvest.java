@@ -19,7 +19,7 @@ public class Harvest {
     @JoinColumn(name = "farmer_id")
     private User farmer;
 
-    private String vegetableType;
+    private String cropName;
     private Double quantity;
     private LocalDate harvestDate;
     private Double expectedPrice;
@@ -28,6 +28,6 @@ public class Harvest {
     private Status status;
 
     public enum Status {
-        PENDING, MATCHED, COMPLETED
+        AVAILABLE, RESERVED, SOLD
     }
 }

@@ -1,11 +1,10 @@
 
 package com.agroconnect.model;
 
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import com.agroconnect.model.enums.Role;
-import com.agroconnect.model.enums.Status;
 
 @Entity
 @Table(name = "users")
@@ -14,29 +13,18 @@ import com.agroconnect.model.enums.Status;
 @AllArgsConstructor
 @Builder
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
+    @Column(unique = true, nullable = false)
+    private String username;
+
+    @Column(nullable = false)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String password;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role;
-
-    @Enumerated(EnumType.STRING)
-    private Status status; // PENDING, UNDER_REVIEW, APPROVED, REJECTED, SUSPENDED
-
-    @Column(unique = true)
-    private String phone;
-    private String passwordHash;
-    private String languagePreference;
-
-    // For assisted onboarding (Farmers)
-    private Long agentId;
-
-    // For Retailers
-    private String businessName;
-
-    // Role and Status enums moved to com.agroconnect.model.enum
 }

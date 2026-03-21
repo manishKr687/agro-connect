@@ -1,41 +1,48 @@
 package com.agroconnect.controller;
 
+import com.agroconnect.dto.AuthResponse;
+import com.agroconnect.dto.LoginRequest;
+import com.agroconnect.dto.RegisterUserRequest;
 import com.agroconnect.model.User;
-import com.agroconnect.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import com.agroconnect.security.CustomUserDetails;
 import com.agroconnect.security.JwtUtil;
-import java.util.HashMap;
-import java.util.Map;
+import com.agroconnect.service.UserService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final UserService userService;
+    private final JwtUtil jwtUtil;
 
-
-    // ...existing code...
-
-    @Autowired
-    private JwtUtil jwtUtil;
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AuthResponse register(@Valid @RequestBody RegisterUserRequest request) {
+        User user = userService.register(request);
+        return buildAuthResponse(user);
+    }
 
     @PostMapping("/login")
-    public Map<String, Object> login(@RequestBody User user) {
-        User dbUser = userRepository.findByPhone(user.getPhone())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        Map<String, Object> response = new HashMap<>();
-        if (passwordEncoder.matches(user.getPasswordHash(), dbUser.getPasswordHash())) {
-            String token = jwtUtil.generateToken(dbUser.getPhone(), dbUser.getRole().name());
-            response.put("token", token);
-            response.put("role", dbUser.getRole().name());
-            response.put("message", "Login successful");
-        } else {
-            response.put("message", "Invalid credentials");
-        }
-        return response;
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+        User user = userService.login(request);
+        return buildAuthResponse(user);
+    }
+
+    private AuthResponse buildAuthResponse(User user) {
+        String token = jwtUtil.generateToken(new CustomUserDetails(user));
+        return AuthResponse.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .role(user.getRole())
+                .token(token)
+                .build();
     }
 }
