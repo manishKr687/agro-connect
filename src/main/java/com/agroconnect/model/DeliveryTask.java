@@ -59,6 +59,7 @@ public class DeliveryTask {
         REJECTED,
         PICKED_UP,
         IN_TRANSIT,
-        DELIVERED
+        DELIVERED,
+        CANCELLED
     }
 }

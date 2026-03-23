@@ -23,6 +23,10 @@ public class Demand {
     private Double quantity;
     private LocalDate requiredDate;
     private Double targetPrice;
+    private Double requestedQuantity;
+    private LocalDate requestedRequiredDate;
+    private Double requestedTargetPrice;
+    private String changeRequestReason;
 
     @Enumerated(EnumType.STRING)
     private Status status;

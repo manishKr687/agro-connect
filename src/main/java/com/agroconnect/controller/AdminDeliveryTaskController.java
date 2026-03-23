@@ -1,9 +1,14 @@
 package com.agroconnect.controller;
 
+import com.agroconnect.dto.ApproveAssignmentRequest;
+import com.agroconnect.dto.CancelTaskRequest;
 import com.agroconnect.dto.CreateDeliveryTaskRequest;
-import com.agroconnect.dto.DemandRequest;
-import com.agroconnect.dto.HarvestRequest;
+import com.agroconnect.dto.MatchSuggestionResponse;
+import com.agroconnect.dto.ReassignTaskRequest;
+import com.agroconnect.dto.TaskExceptionResponse;
 import com.agroconnect.dto.UpdateDeliveryTaskRequest;
+import com.agroconnect.dto.UpdateDemandStatusRequest;
+import com.agroconnect.dto.UpdateHarvestStatusRequest;
 import com.agroconnect.dto.UpdateUserRequest;
 import com.agroconnect.model.DeliveryTask;
 import com.agroconnect.model.Demand;
@@ -12,10 +17,12 @@ import com.agroconnect.model.User;
 import com.agroconnect.service.DeliveryTaskService;
 import com.agroconnect.service.DemandService;
 import com.agroconnect.service.HarvestService;
+import com.agroconnect.service.MatchingService;
 import com.agroconnect.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,7 +31,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.util.List;
 
@@ -35,6 +41,7 @@ public class AdminDeliveryTaskController {
     private final DeliveryTaskService deliveryTaskService;
     private final HarvestService harvestService;
     private final DemandService demandService;
+    private final MatchingService matchingService;
     private final UserService userService;
 
     @GetMapping("/users")
@@ -57,6 +64,16 @@ public class AdminDeliveryTaskController {
         return deliveryTaskService.getAllTasksForAdmin(adminId);
     }
 
+    @GetMapping("/exceptions/tasks")
+    public List<TaskExceptionResponse> getTaskExceptions(@PathVariable Long adminId) {
+        return deliveryTaskService.getTaskExceptionsForAdmin(adminId);
+    }
+
+    @GetMapping("/match-suggestions")
+    public List<MatchSuggestionResponse> getMatchSuggestions(@PathVariable Long adminId) {
+        return matchingService.getTopSuggestionsForAdmin(adminId);
+    }
+
     @PostMapping("/tasks")
     @ResponseStatus(HttpStatus.CREATED)
     public DeliveryTask createTask(
@@ -65,6 +82,39 @@ public class AdminDeliveryTaskController {
     ) {
         request.setAdminId(adminId);
         return deliveryTaskService.createTask(request);
+    }
+
+    @PostMapping("/assignments/approve")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DeliveryTask approveAssignment(
+            @PathVariable Long adminId,
+            @Valid @RequestBody ApproveAssignmentRequest request
+    ) {
+        return deliveryTaskService.approveAssignment(adminId, request);
+    }
+
+    @PostMapping("/tasks/{taskId}/reassign")
+    public DeliveryTask reassignTask(
+            @PathVariable Long adminId,
+            @PathVariable Long taskId,
+            @RequestBody(required = false) ReassignTaskRequest request
+    ) {
+        return deliveryTaskService.reassignTaskForAdmin(adminId, taskId, request == null ? new ReassignTaskRequest() : request);
+    }
+
+    @PostMapping("/tasks/{taskId}/cancel")
+    public DeliveryTask cancelTask(
+            @PathVariable Long adminId,
+            @PathVariable Long taskId,
+            @Valid @RequestBody CancelTaskRequest request
+    ) {
+        return deliveryTaskService.cancelTaskForAdmin(adminId, taskId, request);
+    }
+
+    @PostMapping("/tasks/{taskId}/retry")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DeliveryTask retryTask(@PathVariable Long adminId, @PathVariable Long taskId) {
+        return deliveryTaskService.retryTaskForAdmin(adminId, taskId);
     }
 
     @PutMapping("/users/{userId}")
@@ -86,30 +136,28 @@ public class AdminDeliveryTaskController {
     public Harvest updateHarvest(
             @PathVariable Long adminId,
             @PathVariable Long harvestId,
-            @Valid @RequestBody HarvestRequest request
+            @Valid @RequestBody UpdateHarvestStatusRequest request
     ) {
         return harvestService.updateHarvestForAdmin(adminId, harvestId, request);
-    }
-
-    @DeleteMapping("/harvests/{harvestId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteHarvest(@PathVariable Long adminId, @PathVariable Long harvestId) {
-        harvestService.deleteHarvestForAdmin(adminId, harvestId);
     }
 
     @PutMapping("/demands/{demandId}")
     public Demand updateDemand(
             @PathVariable Long adminId,
             @PathVariable Long demandId,
-            @Valid @RequestBody DemandRequest request
+            @Valid @RequestBody UpdateDemandStatusRequest request
     ) {
         return demandService.updateDemandForAdmin(adminId, demandId, request);
     }
 
-    @DeleteMapping("/demands/{demandId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteDemand(@PathVariable Long adminId, @PathVariable Long demandId) {
-        demandService.deleteDemandForAdmin(adminId, demandId);
+    @PostMapping("/demands/{demandId}/approve-change")
+    public Demand approveDemandChange(@PathVariable Long adminId, @PathVariable Long demandId) {
+        return demandService.approveDemandChangeForAdmin(adminId, demandId);
+    }
+
+    @PostMapping("/demands/{demandId}/reject-change")
+    public Demand rejectDemandChange(@PathVariable Long adminId, @PathVariable Long demandId) {
+        return demandService.rejectDemandChangeForAdmin(adminId, demandId);
     }
 
     @PutMapping("/tasks/{taskId}")

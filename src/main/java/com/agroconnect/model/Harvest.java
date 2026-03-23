@@ -28,6 +28,6 @@ public class Harvest {
     private Status status;
 
     public enum Status {
-        AVAILABLE, RESERVED, SOLD
+        AVAILABLE, RESERVED, SOLD, WITHDRAWAL_REQUESTED, WITHDRAWN
     }
 }

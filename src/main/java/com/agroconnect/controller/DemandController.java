@@ -1,5 +1,6 @@
 package com.agroconnect.controller;
 
+import com.agroconnect.dto.DemandChangeRequest;
 import com.agroconnect.dto.DemandRequest;
 import com.agroconnect.model.Demand;
 import com.agroconnect.service.DemandService;
@@ -51,5 +52,14 @@ public class DemandController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteDemand(@PathVariable Long retailerId, @PathVariable Long demandId) {
         demandService.deleteDemand(retailerId, demandId);
+    }
+
+    @PostMapping("/{demandId}/change-request")
+    public Demand requestDemandChange(
+            @PathVariable Long retailerId,
+            @PathVariable Long demandId,
+            @Valid @RequestBody DemandChangeRequest request
+    ) {
+        return demandService.requestDemandChange(retailerId, demandId, request);
     }
 }

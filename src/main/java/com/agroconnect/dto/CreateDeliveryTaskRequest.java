@@ -8,7 +8,6 @@ public class CreateDeliveryTaskRequest {
     @NotNull
     private Long adminId;
 
-    @NotNull
     private Long agentId;
 
     @NotNull

@@ -1,6 +1,10 @@
 package com.agroconnect.service;
 
+import com.agroconnect.dto.ApproveAssignmentRequest;
+import com.agroconnect.dto.CancelTaskRequest;
 import com.agroconnect.dto.CreateDeliveryTaskRequest;
+import com.agroconnect.dto.ReassignTaskRequest;
+import com.agroconnect.dto.TaskExceptionResponse;
 import com.agroconnect.dto.UpdateDeliveryTaskRequest;
 import com.agroconnect.model.DeliveryTask;
 import com.agroconnect.model.Demand;
@@ -14,23 +18,37 @@ import com.agroconnect.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class DeliveryTaskService {
+    private static final List<DeliveryTask.Status> ACTIVE_TASK_STATUSES = List.of(
+            DeliveryTask.Status.ASSIGNED,
+            DeliveryTask.Status.ACCEPTED,
+            DeliveryTask.Status.PICKED_UP,
+            DeliveryTask.Status.IN_TRANSIT
+    );
+
     private final DeliveryTaskRepository deliveryTaskRepository;
     private final HarvestRepository harvestRepository;
     private final DemandRepository demandRepository;
     private final UserRepository userRepository;
     private final AccessControlService accessControlService;
 
+    @Transactional
     public DeliveryTask createTask(CreateDeliveryTaskRequest request) {
         User admin = accessControlService.requireAdmin(request.getAdminId());
-        User agent = getUserWithRole(request.getAgentId(), Role.AGENT, "User is not an agent");
+        User agent = request.getAgentId() != null
+                ? getUserWithRole(request.getAgentId(), Role.AGENT, "User is not an agent")
+                : findLeastLoadedAgent();
         Harvest harvest = harvestRepository.findById(request.getHarvestId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Harvest not found"));
         Demand demand = demandRepository.findById(request.getDemandId())
@@ -43,6 +61,8 @@ public class DeliveryTaskService {
         if (demand.getStatus() != Demand.Status.OPEN) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Demand is not open for assignment");
         }
+
+        ensureNoActiveAssignmentConflicts(harvest.getId(), demand.getId());
 
         harvest.setStatus(Harvest.Status.RESERVED);
         demand.setStatus(Demand.Status.RESERVED);
@@ -61,6 +81,15 @@ public class DeliveryTaskService {
         return deliveryTaskRepository.save(task);
     }
 
+    @Transactional
+    public DeliveryTask approveAssignment(Long adminId, ApproveAssignmentRequest request) {
+        CreateDeliveryTaskRequest createRequest = new CreateDeliveryTaskRequest();
+        createRequest.setAdminId(adminId);
+        createRequest.setHarvestId(request.getHarvestId());
+        createRequest.setDemandId(request.getDemandId());
+        return createTask(createRequest);
+    }
+
     public List<DeliveryTask> getTasksAssignedToAgent(Long agentId) {
         accessControlService.requireCurrentUser(agentId, Role.AGENT);
         return deliveryTaskRepository.findByAssignedAgentId(agentId);
@@ -71,6 +100,24 @@ public class DeliveryTaskService {
         return deliveryTaskRepository.findAll();
     }
 
+    public DeliveryTask getTaskDetailsForAdmin(Long taskId) {
+        accessControlService.requireAdmin();
+        return deliveryTaskRepository.findById(taskId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+    }
+
+    public List<TaskExceptionResponse> getTaskExceptionsForAdmin(Long adminId) {
+        accessControlService.requireAdmin(adminId);
+        LocalDateTime now = LocalDateTime.now();
+
+        return deliveryTaskRepository.findAll().stream()
+                .map(task -> toTaskException(task, now))
+                .flatMap(Optional::stream)
+                .sorted(Comparator.comparing(TaskExceptionResponse::getAgeHours).reversed())
+                .toList();
+    }
+
+    @Transactional
     public DeliveryTask acceptTask(Long agentId, Long taskId) {
         DeliveryTask task = getAssignedTask(agentId, taskId);
         ensureStatus(task, DeliveryTask.Status.ASSIGNED, "Only assigned tasks can be accepted");
@@ -80,6 +127,7 @@ public class DeliveryTaskService {
         return deliveryTaskRepository.save(task);
     }
 
+    @Transactional
     public DeliveryTask rejectTask(Long agentId, Long taskId, String reason) {
         DeliveryTask task = getAssignedTask(agentId, taskId);
         ensureStatus(task, DeliveryTask.Status.ASSIGNED, "Only assigned tasks can be rejected");
@@ -96,6 +144,7 @@ public class DeliveryTaskService {
         return deliveryTaskRepository.save(task);
     }
 
+    @Transactional
     public DeliveryTask markPickedUp(Long agentId, Long taskId) {
         DeliveryTask task = getAssignedTask(agentId, taskId);
         ensureStatus(task, DeliveryTask.Status.ACCEPTED, "Only accepted tasks can be picked up");
@@ -104,6 +153,7 @@ public class DeliveryTaskService {
         return deliveryTaskRepository.save(task);
     }
 
+    @Transactional
     public DeliveryTask markInTransit(Long agentId, Long taskId) {
         DeliveryTask task = getAssignedTask(agentId, taskId);
         ensureStatus(task, DeliveryTask.Status.PICKED_UP, "Only picked up tasks can move to in transit");
@@ -112,6 +162,7 @@ public class DeliveryTaskService {
         return deliveryTaskRepository.save(task);
     }
 
+    @Transactional
     public DeliveryTask markDelivered(Long agentId, Long taskId) {
         DeliveryTask task = getAssignedTask(agentId, taskId);
         ensureStatus(task, DeliveryTask.Status.IN_TRANSIT, "Only in-transit tasks can be delivered");
@@ -128,16 +179,99 @@ public class DeliveryTaskService {
         return deliveryTaskRepository.save(task);
     }
 
+    @Transactional
+    public DeliveryTask reassignTaskForAdmin(Long adminId, Long taskId, ReassignTaskRequest request) {
+        accessControlService.requireAdmin(adminId);
+        DeliveryTask task = deliveryTaskRepository.findById(taskId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+
+        if (!ACTIVE_TASK_STATUSES.contains(task.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only active tasks can be reassigned");
+        }
+        if (task.getHarvest().getStatus() == Harvest.Status.WITHDRAWAL_REQUESTED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task cannot be reassigned while farmer withdrawal is pending");
+        }
+
+        User agent = request.getAgentId() != null
+                ? getUserWithRole(request.getAgentId(), Role.AGENT, "User is not an agent")
+                : findLeastLoadedAgent(task.getAssignedAgent() == null ? null : task.getAssignedAgent().getId());
+
+        task.setAssignedAgent(agent);
+        task.setAssignedAt(LocalDateTime.now());
+        task.setRejectionReason(null);
+        return deliveryTaskRepository.save(task);
+    }
+
+    @Transactional
     public DeliveryTask updateTaskForAdmin(Long adminId, Long taskId, UpdateDeliveryTaskRequest request) {
         accessControlService.requireAdmin(adminId);
         DeliveryTask task = deliveryTaskRepository.findById(taskId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
-        User agent = getUserWithRole(request.getAgentId(), Role.AGENT, "User is not an agent");
 
-        task.setAssignedAgent(agent);
+        if (request.getAgentId() == null && request.getStatus() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provide agentId or status to update the task");
+        }
+
+        if (request.getAgentId() != null) {
+            User agent = getUserWithRole(request.getAgentId(), Role.AGENT, "User is not an agent");
+            task.setAssignedAgent(agent);
+        }
+
+        if (request.getStatus() != null) {
+            applyAdminStatusUpdate(task, request.getStatus());
+        }
+
         return deliveryTaskRepository.save(task);
     }
 
+    @Transactional
+    public DeliveryTask cancelTaskForAdmin(Long adminId, Long taskId, CancelTaskRequest request) {
+        accessControlService.requireAdmin(adminId);
+        DeliveryTask task = deliveryTaskRepository.findById(taskId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+
+        if (task.getStatus() == DeliveryTask.Status.DELIVERED || task.getStatus() == DeliveryTask.Status.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task cannot be cancelled in its current state");
+        }
+
+        task.setStatus(DeliveryTask.Status.CANCELLED);
+        task.setRejectionReason(request.getReason());
+        resetTaskTimeline(task);
+
+        Harvest harvest = task.getHarvest();
+        Demand demand = task.getDemand();
+        harvest.setStatus(harvest.getStatus() == Harvest.Status.WITHDRAWAL_REQUESTED ? Harvest.Status.WITHDRAWN : Harvest.Status.AVAILABLE);
+        demand.setStatus(Demand.Status.OPEN);
+        harvestRepository.save(harvest);
+        demandRepository.save(demand);
+
+        return deliveryTaskRepository.save(task);
+    }
+
+    @Transactional
+    public DeliveryTask retryTaskForAdmin(Long adminId, Long taskId) {
+        accessControlService.requireAdmin(adminId);
+        DeliveryTask task = deliveryTaskRepository.findById(taskId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+
+        if (task.getStatus() != DeliveryTask.Status.REJECTED && task.getStatus() != DeliveryTask.Status.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only rejected or cancelled tasks can be retried");
+        }
+
+        if (task.getStatus() == DeliveryTask.Status.REJECTED) {
+            task.setStatus(DeliveryTask.Status.CANCELLED);
+            task.setRejectionReason("Retried by admin");
+            deliveryTaskRepository.save(task);
+        }
+
+        CreateDeliveryTaskRequest createRequest = new CreateDeliveryTaskRequest();
+        createRequest.setAdminId(adminId);
+        createRequest.setHarvestId(task.getHarvest().getId());
+        createRequest.setDemandId(task.getDemand().getId());
+        return createTask(createRequest);
+    }
+
+    @Transactional
     public void deleteTaskForAdmin(Long adminId, Long taskId) {
         accessControlService.requireAdmin(adminId);
         DeliveryTask task = deliveryTaskRepository.findById(taskId)
@@ -173,6 +307,89 @@ public class DeliveryTaskService {
         }
     }
 
+    private void applyAdminStatusUpdate(DeliveryTask task, DeliveryTask.Status status) {
+        LocalDateTime now = LocalDateTime.now();
+        task.setStatus(status);
+
+        switch (status) {
+            case ASSIGNED -> {
+                resetTaskTimeline(task);
+                task.setAssignedAt(task.getAssignedAt() == null ? now : task.getAssignedAt());
+                task.setRejectionReason(null);
+                setTaskReservationState(task);
+            }
+            case ACCEPTED -> {
+                resetTaskTimeline(task);
+                task.setAssignedAt(task.getAssignedAt() == null ? now : task.getAssignedAt());
+                task.setAcceptedAt(now);
+                task.setRejectionReason(null);
+                setTaskReservationState(task);
+            }
+            case PICKED_UP -> {
+                resetTaskTimeline(task);
+                task.setAssignedAt(task.getAssignedAt() == null ? now : task.getAssignedAt());
+                task.setAcceptedAt(now);
+                task.setPickedUpAt(now);
+                task.setRejectionReason(null);
+                setTaskReservationState(task);
+            }
+            case IN_TRANSIT -> {
+                resetTaskTimeline(task);
+                task.setAssignedAt(task.getAssignedAt() == null ? now : task.getAssignedAt());
+                task.setAcceptedAt(now);
+                task.setPickedUpAt(now);
+                task.setInTransitAt(now);
+                task.setRejectionReason(null);
+                setTaskReservationState(task);
+            }
+            case DELIVERED -> {
+                resetTaskTimeline(task);
+                task.setAssignedAt(task.getAssignedAt() == null ? now : task.getAssignedAt());
+                task.setAcceptedAt(now);
+                task.setPickedUpAt(now);
+                task.setInTransitAt(now);
+                task.setDeliveredAt(now);
+                task.setRejectionReason(null);
+                task.getHarvest().setStatus(Harvest.Status.SOLD);
+                task.getDemand().setStatus(Demand.Status.FULFILLED);
+                harvestRepository.save(task.getHarvest());
+                demandRepository.save(task.getDemand());
+            }
+            case REJECTED -> {
+                resetTaskTimeline(task);
+                task.setAssignedAt(task.getAssignedAt() == null ? now : task.getAssignedAt());
+                task.setRejectionReason("Rejected by admin");
+                task.getHarvest().setStatus(Harvest.Status.AVAILABLE);
+                task.getDemand().setStatus(Demand.Status.OPEN);
+                harvestRepository.save(task.getHarvest());
+                demandRepository.save(task.getDemand());
+            }
+            case CANCELLED -> {
+                resetTaskTimeline(task);
+                task.setAssignedAt(task.getAssignedAt() == null ? now : task.getAssignedAt());
+                task.setRejectionReason("Cancelled by admin");
+                task.getHarvest().setStatus(Harvest.Status.AVAILABLE);
+                task.getDemand().setStatus(Demand.Status.OPEN);
+                harvestRepository.save(task.getHarvest());
+                demandRepository.save(task.getDemand());
+            }
+        }
+    }
+
+    private void resetTaskTimeline(DeliveryTask task) {
+        task.setAcceptedAt(null);
+        task.setPickedUpAt(null);
+        task.setInTransitAt(null);
+        task.setDeliveredAt(null);
+    }
+
+    private void setTaskReservationState(DeliveryTask task) {
+        task.getHarvest().setStatus(Harvest.Status.RESERVED);
+        task.getDemand().setStatus(Demand.Status.RESERVED);
+        harvestRepository.save(task.getHarvest());
+        demandRepository.save(task.getDemand());
+    }
+
     private User getUserWithRole(Long userId, Role role, String message) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
@@ -182,5 +399,95 @@ public class DeliveryTaskService {
         }
 
         return user;
+    }
+
+    private User findLeastLoadedAgent() {
+        return findLeastLoadedAgent(null);
+    }
+
+    private User findLeastLoadedAgent(Long excludedAgentId) {
+        return userRepository.findByRole(Role.AGENT).stream()
+                .filter(agent -> excludedAgentId == null || !agent.getId().equals(excludedAgentId))
+                .min(Comparator
+                        .comparingLong((User agent) -> deliveryTaskRepository.countByAssignedAgentIdAndStatusIn(agent.getId(), ACTIVE_TASK_STATUSES))
+                        .thenComparingLong(agent -> deliveryTaskRepository.countByAssignedAgentId(agent.getId()))
+                        .thenComparingLong(User::getId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No agent available for assignment"));
+    }
+
+    private void ensureNoActiveAssignmentConflicts(Long harvestId, Long demandId) {
+        if (deliveryTaskRepository.existsByHarvestIdAndStatusIn(harvestId, ACTIVE_TASK_STATUSES)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Harvest already has an active assignment");
+        }
+        if (deliveryTaskRepository.existsByDemandIdAndStatusIn(demandId, ACTIVE_TASK_STATUSES)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Demand already has an active assignment");
+        }
+        if (deliveryTaskRepository.existsByHarvestIdAndDemandIdAndStatusIn(harvestId, demandId, ACTIVE_TASK_STATUSES)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This harvest-demand pair already has an active assignment");
+        }
+    }
+
+    public boolean hasActiveTaskForHarvest(Long harvestId) {
+        return deliveryTaskRepository.existsByHarvestIdAndStatusIn(harvestId, ACTIVE_TASK_STATUSES);
+    }
+
+    public boolean hasActiveTaskForDemand(Long demandId) {
+        return deliveryTaskRepository.existsByDemandIdAndStatusIn(demandId, ACTIVE_TASK_STATUSES);
+    }
+
+    private Optional<TaskExceptionResponse> toTaskException(DeliveryTask task, LocalDateTime now) {
+        if (task.getDemand().getRequestedQuantity() != null
+                || task.getDemand().getRequestedRequiredDate() != null
+                || task.getDemand().getRequestedTargetPrice() != null) {
+            return Optional.of(TaskExceptionResponse.builder()
+                    .taskId(task.getId())
+                    .exceptionType("RETAILER_DEMAND_CHANGE_REQUEST")
+                    .reason(task.getDemand().getChangeRequestReason() == null || task.getDemand().getChangeRequestReason().isBlank()
+                            ? "Retailer requested a change to the reserved demand"
+                            : task.getDemand().getChangeRequestReason())
+                    .ageHours(calculateAgeHours(task.getAssignedAt(), now))
+                    .task(task)
+                    .build());
+        }
+
+        if (task.getHarvest().getStatus() == Harvest.Status.WITHDRAWAL_REQUESTED) {
+            return Optional.of(TaskExceptionResponse.builder()
+                    .taskId(task.getId())
+                    .exceptionType("FARMER_WITHDRAWAL_REQUEST")
+                    .reason(task.getRejectionReason() == null || task.getRejectionReason().isBlank() ? "Farmer requested withdrawal of reserved harvest" : task.getRejectionReason())
+                    .ageHours(calculateAgeHours(task.getAssignedAt(), now))
+                    .task(task)
+                    .build());
+        }
+
+        if (task.getStatus() == DeliveryTask.Status.REJECTED) {
+            return Optional.of(TaskExceptionResponse.builder()
+                    .taskId(task.getId())
+                    .exceptionType("AGENT_REJECTED")
+                    .reason(task.getRejectionReason() == null || task.getRejectionReason().isBlank() ? "Agent rejected task" : task.getRejectionReason())
+                    .ageHours(calculateAgeHours(task.getAssignedAt(), now))
+                    .task(task)
+                    .build());
+        }
+
+        if (ACTIVE_TASK_STATUSES.contains(task.getStatus()) && task.getAssignedAt() != null
+                && ChronoUnit.HOURS.between(task.getAssignedAt(), now) >= 24) {
+            return Optional.of(TaskExceptionResponse.builder()
+                    .taskId(task.getId())
+                    .exceptionType("DELIVERY_STUCK")
+                    .reason("Task has been active for more than 24 hours")
+                    .ageHours(calculateAgeHours(task.getAssignedAt(), now))
+                    .task(task)
+                    .build());
+        }
+
+        return Optional.empty();
+    }
+
+    private long calculateAgeHours(LocalDateTime assignedAt, LocalDateTime now) {
+        if (assignedAt == null) {
+            return 0;
+        }
+        return Math.max(ChronoUnit.HOURS.between(assignedAt, now), 0);
     }
 }

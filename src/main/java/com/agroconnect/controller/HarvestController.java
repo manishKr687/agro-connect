@@ -1,6 +1,7 @@
 package com.agroconnect.controller;
 
 import com.agroconnect.dto.HarvestRequest;
+import com.agroconnect.dto.HarvestWithdrawalRequest;
 import com.agroconnect.model.Harvest;
 import com.agroconnect.service.HarvestService;
 import jakarta.validation.Valid;
@@ -51,5 +52,14 @@ public class HarvestController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteHarvest(@PathVariable Long farmerId, @PathVariable Long harvestId) {
         harvestService.deleteHarvest(farmerId, harvestId);
+    }
+
+    @PostMapping("/{harvestId}/withdrawal-request")
+    public Harvest requestWithdrawal(
+            @PathVariable Long farmerId,
+            @PathVariable Long harvestId,
+            @Valid @RequestBody HarvestWithdrawalRequest request
+    ) {
+        return harvestService.requestWithdrawal(farmerId, harvestId, request);
     }
 }

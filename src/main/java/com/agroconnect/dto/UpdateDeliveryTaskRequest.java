@@ -1,10 +1,11 @@
 package com.agroconnect.dto;
 
-import jakarta.validation.constraints.NotNull;
+import com.agroconnect.model.DeliveryTask;
 import lombok.Data;
 
 @Data
 public class UpdateDeliveryTaskRequest {
-    @NotNull
     private Long agentId;
+
+    private DeliveryTask.Status status;
 }

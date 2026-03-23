@@ -37,6 +37,14 @@ public class AccessControlService {
     }
 
     public User requireAdmin(Long expectedAdminId) {
-        return requireCurrentUser(expectedAdminId, Role.ADMIN);
+        User currentUser = getCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient role for this action");
+        }
+        return currentUser;
+    }
+
+    public User requireAdmin() {
+        return requireAdmin(null);
     }
 }
