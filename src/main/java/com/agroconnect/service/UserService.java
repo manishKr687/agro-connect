@@ -4,6 +4,7 @@ import com.agroconnect.dto.LoginRequest;
 import com.agroconnect.dto.RegisterUserRequest;
 import com.agroconnect.dto.UpdateUserRequest;
 import com.agroconnect.model.User;
+import com.agroconnect.model.enums.Role;
 import com.agroconnect.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +22,29 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AccessControlService accessControlService;
 
+    private static final Set<Role> SELF_REGISTERABLE_ROLES = Set.of(Role.FARMER, Role.RETAILER);
+
     public User register(RegisterUserRequest request) {
+        if (!SELF_REGISTERABLE_ROLES.contains(request.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Role " + request.getRole() + " cannot self-register");
+        }
+
+        userRepository.findByUsername(request.getUsername()).ifPresent(existingUser -> {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
+        });
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(request.getRole())
+                .build();
+
+        return userRepository.save(user);
+    }
+
+    public User createUserForAdmin(Long adminId, RegisterUserRequest request) {
+        accessControlService.requireAdmin(adminId);
+
         userRepository.findByUsername(request.getUsername()).ifPresent(existingUser -> {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
         });

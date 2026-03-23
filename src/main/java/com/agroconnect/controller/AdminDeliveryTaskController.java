@@ -1,6 +1,7 @@
 package com.agroconnect.controller;
 
 import com.agroconnect.dto.ApproveAssignmentRequest;
+import com.agroconnect.dto.RegisterUserRequest;
 import com.agroconnect.dto.CancelTaskRequest;
 import com.agroconnect.dto.CreateDeliveryTaskRequest;
 import com.agroconnect.dto.MatchSuggestionResponse;
@@ -47,6 +48,15 @@ public class AdminDeliveryTaskController {
     @GetMapping("/users")
     public List<User> getAllUsers(@PathVariable Long adminId) {
         return userService.getAllUsersForAdmin(adminId);
+    }
+
+    @PostMapping("/users")
+    @ResponseStatus(HttpStatus.CREATED)
+    public User createUser(
+            @PathVariable Long adminId,
+            @Valid @RequestBody RegisterUserRequest request
+    ) {
+        return userService.createUserForAdmin(adminId, request);
     }
 
     @GetMapping("/harvests")
