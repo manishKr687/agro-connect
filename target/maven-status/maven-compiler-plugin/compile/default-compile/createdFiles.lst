@@ -27,6 +27,7 @@ com\agroconnect\model\enums\Role.class
 com\agroconnect\model\User.class
 com\agroconnect\dto\HarvestRequest.class
 com\agroconnect\model\Harvest$HarvestBuilder.class
+com\agroconnect\security\AuthRateLimitingFilter.class
 com\agroconnect\controller\UserController.class
 com\agroconnect\repository\DeliveryTaskRepository.class
 com\agroconnect\AgroConnectApplication.class
@@ -55,4 +56,5 @@ com\agroconnect\model\Harvest.class
 com\agroconnect\dto\UpdateDeliveryTaskRequest.class
 com\agroconnect\dto\RegisterUserRequest.class
 com\agroconnect\dto\CancelTaskRequest.class
+com\agroconnect\config\AdminBootstrapRunner.class
 com\agroconnect\security\CustomUserDetailsService.class
