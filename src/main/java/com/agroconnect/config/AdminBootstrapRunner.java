@@ -12,6 +12,24 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * Creates the first admin account on application startup if none exists.
+ *
+ * <p>This solves the chicken-and-egg problem: without an admin, there is no way to
+ * create one through the API (which requires an existing admin). On first boot, this
+ * runner checks whether any admin exists; if not, it creates one from the configured
+ * bootstrap credentials.
+ *
+ * <p>Configuration (set per-profile):
+ * <ul>
+ *   <li>{@code app.bootstrap.admin.username} — desired username for the first admin</li>
+ *   <li>{@code app.bootstrap.admin.password} — desired password (will be BCrypt-hashed)</li>
+ * </ul>
+ *
+ * <p>If the credentials are not configured and no admin exists, a warning is logged and
+ * the application starts without an admin account. This runner is a no-op on all subsequent
+ * startups once an admin exists.
+ */
 @Component
 @RequiredArgsConstructor
 public class AdminBootstrapRunner implements ApplicationRunner {

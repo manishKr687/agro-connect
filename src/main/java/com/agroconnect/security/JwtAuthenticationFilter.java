@@ -14,6 +14,22 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Servlet filter that authenticates requests by validating the JWT in the {@code Authorization} header.
+ *
+ * <p>On every request, the filter:
+ * <ol>
+ *   <li>Reads the {@code Authorization: Bearer <token>} header</li>
+ *   <li>Extracts the username from the token via {@link JwtUtil#extractUsername}</li>
+ *   <li>Loads the user from the database and validates the token signature and expiry</li>
+ *   <li>If valid, sets a {@link org.springframework.security.authentication.UsernamePasswordAuthenticationToken}
+ *       in the {@link org.springframework.security.core.context.SecurityContext}</li>
+ * </ol>
+ *
+ * <p>Requests without a valid token pass through unauthenticated — Spring Security's
+ * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity#authorizeHttpRequests}
+ * rules in {@link SecurityConfig} decide whether they are allowed.
+ */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {

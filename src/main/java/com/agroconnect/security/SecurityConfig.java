@@ -18,6 +18,21 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Spring Security configuration for the AgroConnect API.
+ *
+ * <p>Key decisions:
+ * <ul>
+ *   <li><b>Stateless sessions</b> — no server-side session; every request must carry a valid JWT.</li>
+ *   <li><b>CSRF disabled</b> — safe because the API is stateless and not accessed via browser forms.</li>
+ *   <li><b>Public endpoints</b> — only {@code /api/auth/**} (register, login) are permit-all;
+ *       every other path requires authentication.</li>
+ *   <li><b>Filter order</b> — {@link AuthRateLimitingFilter} runs before {@link JwtAuthenticationFilter}
+ *       so rate-limited requests are rejected before any DB lookup occurs.</li>
+ *   <li><b>CORS origins</b> — configured via {@code app.cors.allowed-origins} (comma-separated list),
+ *       set per-profile (e.g. {@code http://localhost:3000} in dev).</li>
+ * </ul>
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {

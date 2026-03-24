@@ -15,14 +15,33 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Rate-limits requests to {@code /api/auth/**} using a per-IP token bucket (Bucket4j).
+ *
+ * <p>Each client IP gets its own bucket. Once the bucket is empty, the filter returns
+ * {@code 429 Too Many Requests} until the bucket refills at the start of the next minute.
+ *
+ * <p>Configuration:
+ * <ul>
+ *   <li>{@code app.rate-limit.auth.requests-per-minute} — bucket capacity and refill rate
+ *       (default: 10; dev override: 100)</li>
+ * </ul>
+ *
+ * <p>The client IP is resolved from the {@code X-Forwarded-For} header when present
+ * (for deployments behind a reverse proxy), falling back to the remote address.
+ * This filter is registered before the JWT filter in {@link SecurityConfig}.
+ */
 @Component
 public class AuthRateLimitingFilter extends OncePerRequestFilter {
 
+    /** Bucket capacity and refill rate per IP per minute. */
     @Value("${app.rate-limit.auth.requests-per-minute:10}")
     private int requestsPerMinute;
 
+    /** One bucket per client IP. ConcurrentHashMap ensures thread-safe lazy initialisation. */
     private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
 
+    /** Only applies to auth endpoints — all other paths are skipped. */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return !request.getRequestURI().startsWith("/api/auth/");

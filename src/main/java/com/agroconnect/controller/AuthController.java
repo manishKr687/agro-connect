@@ -16,6 +16,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Public authentication endpoints — no JWT required.
+ *
+ * <p>Both endpoints return an {@link com.agroconnect.dto.AuthResponse} containing the JWT,
+ * user ID, username, and role. The frontend stores this and includes the JWT as
+ * {@code Authorization: Bearer <token>} on all subsequent requests.
+ *
+ * <p>Rate-limited by {@link com.agroconnect.security.AuthRateLimitingFilter}.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor

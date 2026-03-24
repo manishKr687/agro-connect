@@ -14,6 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Agent-scoped delivery task endpoints under {@code /api/agents/{agentId}/tasks}.
+ *
+ * <p>The {@code agentId} path variable must match the authenticated user's ID and role (AGENT),
+ * enforced by {@link com.agroconnect.service.AccessControlService#requireCurrentUser}.
+ * Additionally, each task action verifies that the task is actually assigned to this agent.
+ *
+ * <p>Endpoints drive the agent-side status progression:
+ * {@code ASSIGNED → ACCEPTED → PICKED_UP → IN_TRANSIT → DELIVERED}
+ * or {@code ASSIGNED → REJECTED}.
+ */
 @RestController
 @RequestMapping("/api/agents/{agentId}/tasks")
 @RequiredArgsConstructor

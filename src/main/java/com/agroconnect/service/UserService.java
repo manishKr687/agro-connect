@@ -15,6 +15,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Handles user registration, authentication, and admin-level user management.
+ *
+ * <p>Self-registration is restricted to {@code FARMER} and {@code RETAILER} roles.
+ * {@code ADMIN} and {@code AGENT} accounts can only be created by an existing admin
+ * via {@link #createUserForAdmin(Long, RegisterUserRequest)}.
+ */
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -22,8 +29,15 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AccessControlService accessControlService;
 
+    /** Roles that are allowed to self-register via the public {@code /api/auth/register} endpoint. */
     private static final Set<Role> SELF_REGISTERABLE_ROLES = Set.of(Role.FARMER, Role.RETAILER);
 
+    /**
+     * Registers a new farmer or retailer account.
+     *
+     * @throws org.springframework.web.server.ResponseStatusException 403 if the requested role is ADMIN or AGENT
+     * @throws org.springframework.web.server.ResponseStatusException 409 if the username is already taken
+     */
     public User register(RegisterUserRequest request) {
         if (!SELF_REGISTERABLE_ROLES.contains(request.getRole())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Role " + request.getRole() + " cannot self-register");
@@ -42,6 +56,12 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    /**
+     * Creates a user of any role on behalf of an admin. Used to provision ADMIN and AGENT accounts.
+     *
+     * @throws org.springframework.web.server.ResponseStatusException 403 if the caller is not an ADMIN
+     * @throws org.springframework.web.server.ResponseStatusException 409 if the username is already taken
+     */
     public User createUserForAdmin(Long adminId, RegisterUserRequest request) {
         accessControlService.requireAdmin(adminId);
 
@@ -58,6 +78,12 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    /**
+     * Validates credentials and returns the authenticated user.
+     * The caller ({@link com.agroconnect.controller.AuthController}) then generates a JWT from the result.
+     *
+     * @throws org.springframework.web.server.ResponseStatusException 401 if the username doesn't exist or the password is wrong
+     */
     public User login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));

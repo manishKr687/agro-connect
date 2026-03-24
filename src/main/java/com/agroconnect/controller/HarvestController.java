@@ -19,6 +19,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Farmer-scoped harvest endpoints under {@code /api/farmers/{farmerId}/harvests}.
+ *
+ * <p>The {@code farmerId} path variable must match the authenticated user's ID and role (FARMER),
+ * enforced by {@link com.agroconnect.service.AccessControlService#requireCurrentUser}.
+ *
+ * <p>Edits and deletes are restricted to {@code AVAILABLE} harvests. Reserved harvests
+ * can only be withdrawn via the {@code /withdrawal-request} sub-endpoint.
+ */
 @RestController
 @RequestMapping("/api/farmers/{farmerId}/harvests")
 @RequiredArgsConstructor

@@ -19,6 +19,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Retailer-scoped demand endpoints under {@code /api/retailers/{retailerId}/demands}.
+ *
+ * <p>The {@code retailerId} path variable must match the authenticated user's ID and role (RETAILER),
+ * enforced by {@link com.agroconnect.service.AccessControlService#requireCurrentUser}.
+ *
+ * <p>Edits and deletes are restricted to {@code OPEN} demands. Reserved demands
+ * can only be modified via the {@code /change-request} sub-endpoint, which queues
+ * the changes for admin approval rather than applying them immediately.
+ */
 @RestController
 @RequestMapping("/api/retailers/{retailerId}/demands")
 @RequiredArgsConstructor

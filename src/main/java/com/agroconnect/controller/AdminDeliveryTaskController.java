@@ -35,6 +35,23 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Admin-only REST controller. All endpoints are under {@code /api/admins/{adminId}/}.
+ *
+ * <p>The {@code adminId} path variable is passed to each service method, which delegates to
+ * {@link com.agroconnect.service.AccessControlService#requireAdmin(Long)} to verify that
+ * the authenticated user is an admin before any data access occurs.
+ *
+ * <p>Responsibilities:
+ * <ul>
+ *   <li>User management — list, create, update, delete</li>
+ *   <li>Harvest and demand oversight — list all, force status update</li>
+ *   <li>Delivery task management — create, reassign, cancel, retry, force-update, delete</li>
+ *   <li>Match suggestions — scored harvest–demand pairs ready for task creation</li>
+ *   <li>Exception queue — tasks needing admin attention</li>
+ *   <li>Demand change requests — approve or reject retailer-requested changes</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/admins/{adminId}")
 @RequiredArgsConstructor

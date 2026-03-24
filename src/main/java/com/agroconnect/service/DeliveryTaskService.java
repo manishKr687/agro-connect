@@ -27,9 +27,35 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Manages the full lifecycle of delivery tasks — from creation through delivery or cancellation.
+ *
+ * <h2>Task creation</h2>
+ * <p>An admin selects a matched harvest–demand pair and calls {@link #createTask}.
+ * The service reserves both the harvest and demand, then assigns an agent (either
+ * explicitly or by selecting the least-loaded available agent automatically).
+ *
+ * <h2>Agent-driven status progression</h2>
+ * <pre>
+ *   ASSIGNED → ACCEPTED (agent accepts)
+ *            → PICKED_UP (agent picks up crop)
+ *            → IN_TRANSIT (agent departs for retailer)
+ *            → DELIVERED (agent confirms delivery; harvest=SOLD, demand=FULFILLED)
+ *            → REJECTED (agent declines; harvest/demand revert to AVAILABLE/OPEN)
+ * </pre>
+ *
+ * <h2>Admin overrides</h2>
+ * <p>Admins can cancel any non-terminal task, reassign the agent, force-update the status,
+ * retry a rejected/cancelled task, or permanently delete a task record.
+ *
+ * <h2>Exception monitoring</h2>
+ * <p>{@link #getTaskExceptionsForAdmin} surfaces four categories of exceptions:
+ * AGENT_REJECTED, FARMER_WITHDRAWAL_REQUEST, RETAILER_DEMAND_CHANGE_REQUEST, DELIVERY_STUCK (&gt;24h active).
+ */
 @Service
 @RequiredArgsConstructor
 public class DeliveryTaskService {
+    /** Task statuses that represent an in-progress delivery (not yet terminal). */
     private static final List<DeliveryTask.Status> ACTIVE_TASK_STATUSES = List.of(
             DeliveryTask.Status.ASSIGNED,
             DeliveryTask.Status.ACCEPTED,
@@ -43,6 +69,16 @@ public class DeliveryTaskService {
     private final UserRepository userRepository;
     private final AccessControlService accessControlService;
 
+    /**
+     * Creates a delivery task for the given harvest–demand pair.
+     *
+     * <p>If no {@code agentId} is specified in the request, the least-loaded available agent is
+     * selected automatically (fewest active tasks, then fewest total tasks, then lowest ID).
+     *
+     * @throws org.springframework.web.server.ResponseStatusException 400 if harvest is not AVAILABLE or demand is not OPEN
+     * @throws org.springframework.web.server.ResponseStatusException 409 if either harvest or demand already has an active task
+     * @throws org.springframework.web.server.ResponseStatusException 400 if no agents are available
+     */
     @Transactional
     public DeliveryTask createTask(CreateDeliveryTaskRequest request) {
         User admin = accessControlService.requireAdmin(request.getAdminId());
@@ -106,6 +142,17 @@ public class DeliveryTaskService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
     }
 
+    /**
+     * Returns all tasks that require admin attention, sorted by age (oldest first).
+     *
+     * <p>Four exception types are surfaced:
+     * <ul>
+     *   <li>{@code AGENT_REJECTED} — agent declined the task</li>
+     *   <li>{@code FARMER_WITHDRAWAL_REQUEST} — farmer wants to pull back a reserved harvest</li>
+     *   <li>{@code RETAILER_DEMAND_CHANGE_REQUEST} — retailer submitted changes to a reserved demand</li>
+     *   <li>{@code DELIVERY_STUCK} — task has been active for more than 24 hours</li>
+     * </ul>
+     */
     public List<TaskExceptionResponse> getTaskExceptionsForAdmin(Long adminId) {
         accessControlService.requireAdmin(adminId);
         LocalDateTime now = LocalDateTime.now();
@@ -250,6 +297,15 @@ public class DeliveryTaskService {
         return deliveryTaskRepository.save(task);
     }
 
+    /**
+     * Re-creates a delivery task for the same harvest–demand pair from a rejected or cancelled task.
+     *
+     * <p>If the original task was {@code REJECTED}, it is first transitioned to {@code CANCELLED}
+     * before the new task is created, ensuring only one active task exists per harvest/demand at a time.
+     * The new task auto-assigns the least-loaded agent.
+     *
+     * @throws org.springframework.web.server.ResponseStatusException 400 if the task is not in REJECTED or CANCELLED state
+     */
     @Transactional
     public DeliveryTask retryTaskForAdmin(Long adminId, Long taskId) {
         accessControlService.requireAdmin(adminId);
@@ -407,6 +463,13 @@ public class DeliveryTaskService {
         return findLeastLoadedAgent(null);
     }
 
+    /**
+     * Finds the agent with the fewest active tasks. Ties are broken by total task count,
+     * then by agent ID. Optionally excludes one agent (used during reassignment to avoid
+     * re-assigning to the same person).
+     *
+     * @throws org.springframework.web.server.ResponseStatusException 400 if no eligible agents exist
+     */
     private User findLeastLoadedAgent(Long excludedAgentId) {
         return userRepository.findByRole(Role.AGENT).stream()
                 .filter(agent -> excludedAgentId == null || !agent.getId().equals(excludedAgentId))

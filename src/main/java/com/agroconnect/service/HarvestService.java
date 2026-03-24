@@ -17,9 +17,20 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+/**
+ * Business logic for farmer harvest management and admin harvest oversight.
+ *
+ * <p>Farmers can create, update, and delete their own {@code AVAILABLE} harvests.
+ * Once a harvest is {@code RESERVED} (linked to a delivery task), the farmer can only
+ * request a withdrawal — the admin must then cancel the task to release the harvest.
+ *
+ * <p>Admin operations bypass ownership checks and can update a harvest's status directly,
+ * provided no active delivery task exists for it.
+ */
 @Service
 @RequiredArgsConstructor
 public class HarvestService {
+    /** Task statuses that indicate an active in-progress delivery. */
     private static final List<DeliveryTask.Status> ACTIVE_TASK_STATUSES = List.of(
             DeliveryTask.Status.ASSIGNED,
             DeliveryTask.Status.ACCEPTED,
@@ -33,6 +44,11 @@ public class HarvestService {
     private final AccessControlService accessControlService;
     private final DeliveryTaskService deliveryTaskService;
 
+    /**
+     * Creates a new harvest for the given farmer. Status is set to {@code AVAILABLE} automatically.
+     *
+     * @throws org.springframework.web.server.ResponseStatusException 403 if the caller is not the specified farmer
+     */
     public Harvest createHarvest(Long farmerId, HarvestRequest request) {
         User farmer = accessControlService.requireCurrentUser(farmerId, Role.FARMER);
 
@@ -87,6 +103,16 @@ public class HarvestService {
         harvestRepository.delete(harvest);
     }
 
+    /**
+     * Flags a reserved harvest for withdrawal. The harvest must currently be {@code RESERVED}
+     * and have an active delivery task. The withdrawal reason is stored on the task's
+     * {@code rejectionReason} field and surfaces in the admin exception queue.
+     *
+     * <p>The admin must cancel the task to complete the withdrawal.
+     *
+     * @throws org.springframework.web.server.ResponseStatusException 400 if harvest is not RESERVED
+     * @throws org.springframework.web.server.ResponseStatusException 409 if no active task exists for the harvest
+     */
     public Harvest requestWithdrawal(Long farmerId, Long harvestId, HarvestWithdrawalRequest request) {
         User farmer = accessControlService.requireCurrentUser(farmerId, Role.FARMER);
         Harvest harvest = harvestRepository.findById(harvestId)

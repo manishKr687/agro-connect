@@ -17,9 +17,22 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+/**
+ * Business logic for retailer demand management and admin demand oversight.
+ *
+ * <p>Retailers can create, update, and delete their own {@code OPEN} demands.
+ * Once a demand is {@code RESERVED} (linked to a delivery task), the retailer can only
+ * submit a change request via {@link #requestDemandChange}. The pending changes are
+ * stored in the {@code requested*} fields on the demand and must be approved or rejected
+ * by an admin before taking effect.
+ *
+ * <p>Admin operations bypass ownership checks and can update a demand's status directly,
+ * provided no active delivery task exists for it.
+ */
 @Service
 @RequiredArgsConstructor
 public class DemandService {
+    /** Task statuses that indicate an active in-progress delivery. */
     private static final List<DeliveryTask.Status> ACTIVE_TASK_STATUSES = List.of(
             DeliveryTask.Status.ASSIGNED,
             DeliveryTask.Status.ACCEPTED,
@@ -87,6 +100,17 @@ public class DemandService {
         demandRepository.delete(demand);
     }
 
+    /**
+     * Submits a change request for a reserved demand. The requested values are stored in the
+     * {@code requested*} fields on the demand entity and appear in the admin exception queue.
+     *
+     * <p>The actual demand values are not modified until an admin calls
+     * {@link #approveDemandChangeForAdmin}. Calling {@link #rejectDemandChangeForAdmin} clears
+     * the pending fields without applying any changes.
+     *
+     * @throws org.springframework.web.server.ResponseStatusException 400 if demand is not RESERVED
+     * @throws org.springframework.web.server.ResponseStatusException 409 if no active task exists for the demand
+     */
     public Demand requestDemandChange(Long retailerId, Long demandId, DemandChangeRequest request) {
         User retailer = accessControlService.requireCurrentUser(retailerId, Role.RETAILER);
         Demand demand = demandRepository.findById(demandId)
@@ -128,6 +152,15 @@ public class DemandService {
         return demandRepository.save(demand);
     }
 
+    /**
+     * Applies the pending change request to the demand's live fields and clears the {@code requested*} fields.
+     *
+     * <p>Validates that the requested quantity does not exceed the reserved harvest's available quantity
+     * before applying, to prevent the match from becoming invalid.
+     *
+     * @throws org.springframework.web.server.ResponseStatusException 400 if no change request is pending
+     * @throws org.springframework.web.server.ResponseStatusException 400 if the requested quantity exceeds harvest capacity
+     */
     public Demand approveDemandChangeForAdmin(Long adminId, Long demandId) {
         accessControlService.requireAdmin(adminId);
         Demand demand = demandRepository.findById(demandId)
