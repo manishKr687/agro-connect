@@ -25,12 +25,9 @@ public class MatchingService {
     public List<MatchSuggestionResponse> getTopSuggestionsForAdmin(Long adminId) {
         accessControlService.requireAdmin(adminId);
 
-        List<Harvest> availableHarvests = harvestRepository.findAll().stream()
-                .filter(harvest -> harvest.getStatus() == Harvest.Status.AVAILABLE)
-                .toList();
+        List<Harvest> availableHarvests = harvestRepository.findByStatus(Harvest.Status.AVAILABLE);
 
-        return demandRepository.findAll().stream()
-                .filter(demand -> demand.getStatus() == Demand.Status.OPEN)
+        return demandRepository.findByStatus(Demand.Status.OPEN).stream()
                 .map(demand -> buildTopSuggestion(demand, availableHarvests))
                 .flatMap(Optional::stream)
                 .sorted(Comparator.comparing(MatchSuggestionResponse::getScore).reversed())

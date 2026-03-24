@@ -110,7 +110,9 @@ public class DeliveryTaskService {
         accessControlService.requireAdmin(adminId);
         LocalDateTime now = LocalDateTime.now();
 
-        return deliveryTaskRepository.findAll().stream()
+        LocalDateTime stuckThreshold = now.minusHours(24);
+
+        return deliveryTaskRepository.findExceptionCandidates(ACTIVE_TASK_STATUSES, stuckThreshold).stream()
                 .map(task -> toTaskException(task, now))
                 .flatMap(Optional::stream)
                 .sorted(Comparator.comparing(TaskExceptionResponse::getAgeHours).reversed())

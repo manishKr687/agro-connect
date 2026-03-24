@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface HarvestRepository extends JpaRepository<Harvest, Long> {
     List<Harvest> findByFarmerId(Long farmerId);
+    List<Harvest> findByStatus(Harvest.Status status);
 }

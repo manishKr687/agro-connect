@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface DemandRepository extends JpaRepository<Demand, Long> {
     List<Demand> findByRetailerId(Long retailerId);
+    List<Demand> findByStatus(Demand.Status status);
 }
