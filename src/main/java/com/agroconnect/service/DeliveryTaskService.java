@@ -159,7 +159,11 @@ public class DeliveryTaskService {
 
         LocalDateTime stuckThreshold = now.minusHours(24);
 
-        return deliveryTaskRepository.findExceptionCandidates(ACTIVE_TASK_STATUSES, stuckThreshold).stream()
+        return deliveryTaskRepository.findExceptionCandidates(
+                DeliveryTask.Status.REJECTED,
+                Harvest.Status.WITHDRAWAL_REQUESTED,
+                ACTIVE_TASK_STATUSES,
+                stuckThreshold).stream()
                 .map(task -> toTaskException(task, now))
                 .flatMap(Optional::stream)
                 .sorted(Comparator.comparing(TaskExceptionResponse::getAgeHours).reversed())

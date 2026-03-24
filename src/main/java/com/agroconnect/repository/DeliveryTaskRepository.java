@@ -1,6 +1,7 @@
 package com.agroconnect.repository;
 
 import com.agroconnect.model.DeliveryTask;
+import com.agroconnect.model.Harvest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,14 +23,16 @@ public interface DeliveryTaskRepository extends JpaRepository<DeliveryTask, Long
 
     @Query("""
             SELECT t FROM DeliveryTask t
-            WHERE t.status = com.agroconnect.model.DeliveryTask.Status.REJECTED
-               OR t.harvest.status = com.agroconnect.model.Harvest.Status.WITHDRAWAL_REQUESTED
+            WHERE t.status = :rejectedStatus
+               OR t.harvest.status = :withdrawalStatus
                OR t.demand.requestedQuantity IS NOT NULL
                OR t.demand.requestedRequiredDate IS NOT NULL
                OR t.demand.requestedTargetPrice IS NOT NULL
                OR (t.status IN :activeStatuses AND t.assignedAt <= :stuckThreshold)
             """)
     List<DeliveryTask> findExceptionCandidates(
+            @Param("rejectedStatus") DeliveryTask.Status rejectedStatus,
+            @Param("withdrawalStatus") Harvest.Status withdrawalStatus,
             @Param("activeStatuses") List<DeliveryTask.Status> activeStatuses,
             @Param("stuckThreshold") LocalDateTime stuckThreshold
     );
