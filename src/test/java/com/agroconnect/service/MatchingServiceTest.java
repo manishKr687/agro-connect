@@ -65,8 +65,8 @@ class MatchingServiceTest {
         Harvest harvest = availableHarvest("Tomato", 100.0, LocalDate.now());
         Demand demand = openDemand("Potato", 50.0, LocalDate.now().plusDays(2));
 
-        when(harvestRepository.findAll()).thenReturn(List.of(harvest));
-        when(demandRepository.findAll()).thenReturn(List.of(demand));
+        when(harvestRepository.findByStatus(Harvest.Status.AVAILABLE)).thenReturn(List.of(harvest));
+        when(demandRepository.findByStatus(Demand.Status.OPEN)).thenReturn(List.of(demand));
 
         List<MatchSuggestionResponse> result = matchingService.getTopSuggestionsForAdmin(admin.getId());
 
@@ -78,8 +78,8 @@ class MatchingServiceTest {
         Harvest harvest = availableHarvest("Tomato", 30.0, LocalDate.now());
         Demand demand = openDemand("Tomato", 50.0, LocalDate.now().plusDays(2));
 
-        when(harvestRepository.findAll()).thenReturn(List.of(harvest));
-        when(demandRepository.findAll()).thenReturn(List.of(demand));
+        when(harvestRepository.findByStatus(Harvest.Status.AVAILABLE)).thenReturn(List.of(harvest));
+        when(demandRepository.findByStatus(Demand.Status.OPEN)).thenReturn(List.of(demand));
 
         List<MatchSuggestionResponse> result = matchingService.getTopSuggestionsForAdmin(admin.getId());
 
@@ -91,8 +91,8 @@ class MatchingServiceTest {
         Harvest harvest = availableHarvest("Tomato", 100.0, LocalDate.now().plusDays(5));
         Demand demand = openDemand("Tomato", 50.0, LocalDate.now().plusDays(2));
 
-        when(harvestRepository.findAll()).thenReturn(List.of(harvest));
-        when(demandRepository.findAll()).thenReturn(List.of(demand));
+        when(harvestRepository.findByStatus(Harvest.Status.AVAILABLE)).thenReturn(List.of(harvest));
+        when(demandRepository.findByStatus(Demand.Status.OPEN)).thenReturn(List.of(demand));
 
         List<MatchSuggestionResponse> result = matchingService.getTopSuggestionsForAdmin(admin.getId());
 
@@ -104,8 +104,8 @@ class MatchingServiceTest {
         Harvest harvest = availableHarvest("TOMATO", 100.0, LocalDate.now());
         Demand demand = openDemand("tomato", 50.0, LocalDate.now().plusDays(2));
 
-        when(harvestRepository.findAll()).thenReturn(List.of(harvest));
-        when(demandRepository.findAll()).thenReturn(List.of(demand));
+        when(harvestRepository.findByStatus(Harvest.Status.AVAILABLE)).thenReturn(List.of(harvest));
+        when(demandRepository.findByStatus(Demand.Status.OPEN)).thenReturn(List.of(demand));
 
         List<MatchSuggestionResponse> result = matchingService.getTopSuggestionsForAdmin(admin.getId());
 
@@ -130,8 +130,8 @@ class MatchingServiceTest {
 
         Demand demand = openDemand("Tomato", 50.0, requiredDate);
 
-        when(harvestRepository.findAll()).thenReturn(List.of(exactHarvest, oversupplyHarvest));
-        when(demandRepository.findAll()).thenReturn(List.of(demand));
+        when(harvestRepository.findByStatus(Harvest.Status.AVAILABLE)).thenReturn(List.of(exactHarvest, oversupplyHarvest));
+        when(demandRepository.findByStatus(Demand.Status.OPEN)).thenReturn(List.of(demand));
 
         List<MatchSuggestionResponse> result = matchingService.getTopSuggestionsForAdmin(admin.getId());
 
