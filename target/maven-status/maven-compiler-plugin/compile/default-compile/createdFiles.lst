@@ -2,7 +2,6 @@ com\agroconnect\controller\AuthController.class
 com\agroconnect\dto\AuthResponse.class
 com\agroconnect\security\SecurityConfig.class
 com\agroconnect\model\Demand$Status.class
-com\agroconnect\config\DatabaseConstraintInitializer.class
 com\agroconnect\dto\TaskExceptionResponse.class
 com\agroconnect\dto\MatchSuggestionResponse.class
 com\agroconnect\dto\ReassignTaskRequest.class

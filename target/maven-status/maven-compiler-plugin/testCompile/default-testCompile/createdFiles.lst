@@ -1,0 +1,4 @@
+com\agroconnect\service\UserServiceTest.class
+com\agroconnect\service\AccessControlServiceTest.class
+com\agroconnect\service\DeliveryTaskServiceTest.class
+com\agroconnect\service\MatchingServiceTest.class
