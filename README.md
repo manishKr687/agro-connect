@@ -126,6 +126,201 @@ Runs on `http://localhost:3000`. Update `src/api/axiosConfig.js` if the backend 
 
 ---
 
+## Docker Deployment
+
+The entire stack (frontend, backend, database) runs with a single command using Docker Compose.
+
+### Architecture
+
+```
+Browser → :3000 (Nginx)
+              ├── /          → serves React static files
+              └── /api/*     → proxied to backend:8081
+                                      ↓
+                              Spring Boot :8081
+                                      ↓
+                              PostgreSQL :5432
+```
+
+Nginx acts as a reverse proxy — the browser never talks to the backend directly, which eliminates CORS issues in production.
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `docker-compose.yml` | Orchestrates all three services |
+| `backend/Dockerfile` | Multi-stage build: Maven → slim JRE image |
+| `frontend/Dockerfile` | Multi-stage build: Node → Nginx image |
+| `frontend/nginx.conf` | Serves static files, proxies `/api/` to backend |
+| `.env.example` | Template for all required environment variables |
+
+### Quick Start (Local)
+
+**1. Clone and enter the project**
+```bash
+cd agro-connect
+```
+
+**2. Create your environment file**
+
+Windows:
+```cmd
+copy .env.example .env
+```
+
+Linux/Mac:
+```bash
+cp .env.example .env
+```
+
+**3. Edit `.env` with your values**
+```env
+DB_USERNAME=agroconnect
+DB_PASSWORD=your_strong_password
+
+# Generate with: openssl rand -hex 32
+JWT_SECRET=your_32_char_minimum_secret_key_here
+
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+
+BOOTSTRAP_ADMIN_USERNAME=admin
+BOOTSTRAP_ADMIN_PASSWORD=your_admin_password
+```
+
+**4. Build and start**
+```bash
+docker-compose up -d --build
+```
+
+The first build takes a few minutes. Subsequent starts are fast.
+
+**5. Open the app**
+```
+http://localhost:3000
+```
+
+Login with the admin credentials you set in `.env`.
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DB_USERNAME` | Yes | PostgreSQL username |
+| `DB_PASSWORD` | Yes | PostgreSQL password |
+| `JWT_SECRET` | Yes | HMAC signing key (min 32 characters) |
+| `CORS_ALLOWED_ORIGINS` | Yes | Browser-visible origin (e.g. `http://localhost:3000`) |
+| `BOOTSTRAP_ADMIN_USERNAME` | Yes | First admin username (only used on first boot) |
+| `BOOTSTRAP_ADMIN_PASSWORD` | Yes | First admin password (only used on first boot) |
+| `JWT_EXPIRATION_MS` | No | Token lifetime in ms (default: 36000000 = 10 hours) |
+
+### Common Commands
+
+```bash
+# Start in background
+docker-compose up -d
+
+# Stop (data is preserved)
+docker-compose down
+
+# Stop and delete all data
+docker-compose down -v
+
+# Rebuild after code changes
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Check container status
+docker-compose ps
+```
+
+### Deploying to a Server (Ubuntu VPS)
+
+**1. Install Docker on the server**
+```bash
+curl -fsSL https://get.docker.com | sh
+```
+
+**2. Copy project files to the server**
+
+From your local machine:
+```bash
+scp -r ./agro-connect user@your-server-ip:/app/agro-connect
+```
+
+**3. SSH into the server and start**
+```bash
+ssh user@your-server-ip
+cd /app/agro-connect
+cp .env.example .env
+nano .env   # fill in production values
+docker-compose up -d --build
+```
+
+**4. Set CORS to your real domain**
+
+In `.env`:
+```env
+CORS_ALLOWED_ORIGINS=https://yourdomain.com
+```
+
+App will be available at `http://your-server-ip:3000`.
+
+### Notes
+
+- Database data is stored in the `postgres_data` Docker volume — it persists across restarts and `docker-compose down`.
+- The bootstrap admin is only created once (on first startup when no admin exists). Changing `BOOTSTRAP_ADMIN_*` after that has no effect.
+- The backend actuator (health/metrics) runs on internal port `8082` and is not exposed outside the container.
+- All containers have `restart: unless-stopped` — they come back automatically after a server reboot.
+
+---
+
+### Common Mistakes to Avoid
+
+#### Secrets & Configuration
+
+| Mistake | What happens | Fix |
+|---------|-------------|-----|
+| Committing `.env` to Git | Credentials exposed publicly forever | `.env` is in `.gitignore` — never remove it |
+| Using a short `JWT_SECRET` | App fails to start or tokens are easily cracked | Use at least 32 characters; generate with `openssl rand -hex 32` |
+| Keeping example passwords in production | System is trivially compromised | Change every value in `.env` before going live |
+| Setting `CORS_ALLOWED_ORIGINS=*` | Any website can make authenticated API calls on behalf of your users | Always set the exact origin, e.g. `https://yourdomain.com` |
+| Wrong `CORS_ALLOWED_ORIGINS` for the environment | All API calls return 403 | Must match the browser-visible URL exactly, including port (e.g. `http://localhost:3000`) |
+
+#### Docker & Build
+
+| Mistake | What happens | Fix |
+|---------|-------------|-----|
+| Running `docker-compose up --build` without updating `package-lock.json` | Frontend build fails with `npm ci` sync error | Run `npm install` in `/frontend` first whenever you add/update packages |
+| Port conflict (XAMPP, IIS, another app on port 80/3000/5432) | Container fails to start or wrong app opens | Change the port mapping in `docker-compose.yml`, e.g. `"3000:80"` |
+| Running `docker-compose down -v` in production | **Deletes all database data permanently** | Use `docker-compose down` (without `-v`) to just stop containers |
+| Not waiting for health checks on first boot | Frontend starts before backend is ready | Wait ~60 seconds after `docker-compose up` before opening the browser |
+| Editing code without rebuilding | Changes not reflected in running containers | Always run `docker-compose up -d --build` after code changes |
+
+#### Database
+
+| Mistake | What happens | Fix |
+|---------|-------------|-----|
+| Changing `DB_USERNAME` or `DB_PASSWORD` after first run | PostgreSQL container fails to start (credentials mismatch with existing volume) | Run `docker-compose down -v` first to reset, or keep the original credentials |
+| Modifying entity fields without a Flyway migration | App fails to start in prod (`ddl-auto=validate` rejects schema mismatch) | Always create a new `V2__...sql` migration file for any schema change |
+
+#### Production Server
+
+| Mistake | What happens | Fix |
+|---------|-------------|-----|
+| Exposing port 5432 publicly | Database accessible from the internet | Remove the `ports` entry for `db` in `docker-compose.yml` (already done) |
+| Not setting up a firewall | All ports open to the internet | On Ubuntu: `ufw allow 22 && ufw allow 3000 && ufw enable` |
+| Using HTTP instead of HTTPS in production | Passwords and tokens sent in plaintext | Put Nginx or Caddy in front with an SSL certificate (Let's Encrypt is free) |
+
+---
+
 ## Directory Structure
 
 ```
