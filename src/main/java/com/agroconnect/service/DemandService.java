@@ -45,13 +45,14 @@ public class DemandService {
     private final UserRepository userRepository;
     private final AccessControlService accessControlService;
     private final DeliveryTaskService deliveryTaskService;
+    private final CropNormalizerClient cropNormalizerClient;
 
     public Demand createDemand(Long retailerId, DemandRequest request) {
         User retailer = accessControlService.requireCurrentUser(retailerId, Role.RETAILER);
 
         Demand demand = Demand.builder()
                 .retailer(retailer)
-                .cropName(request.getCropName())
+                .cropName(cropNormalizerClient.normalize(request.getCropName()))
                 .quantity(request.getQuantity())
                 .requiredDate(request.getRequiredDate())
                 .targetPrice(request.getTargetPrice())
@@ -78,7 +79,7 @@ public class DemandService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only open demands can be edited directly");
         }
 
-        demand.setCropName(request.getCropName());
+        demand.setCropName(cropNormalizerClient.normalize(request.getCropName()));
         demand.setQuantity(request.getQuantity());
         demand.setRequiredDate(request.getRequiredDate());
         demand.setTargetPrice(request.getTargetPrice());

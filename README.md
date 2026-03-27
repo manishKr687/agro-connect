@@ -282,6 +282,135 @@ App will be available at `http://your-server-ip:3000`.
 
 ---
 
+### Deploying to AWS ECS (Fargate)
+
+#### Architecture
+
+```
+Internet → ALB :80 → ECS Fargate Task
+                          ├── frontend container (Nginx :80)
+                          │       └── /api/* proxied to localhost:8081
+                          └── backend container (Spring Boot :8081)
+                                      ↓
+                              RDS PostgreSQL
+```
+
+Both frontend and backend run as **sidecars in the same Fargate task**. Nginx proxies `/api/` to `localhost:8081` since they share the same network namespace.
+
+#### Prerequisites
+
+- AWS CLI installed and configured (`aws configure`)
+- Docker Desktop running
+- An AWS account
+
+#### Step 1 — Create ECR Repositories
+
+```bash
+aws ecr create-repository --repository-name agroconnect-backend --region YOUR_REGION
+aws ecr create-repository --repository-name agroconnect-frontend --region YOUR_REGION
+```
+
+#### Step 2 — Build and Push Images
+
+```bash
+# Authenticate Docker with ECR
+aws ecr get-login-password --region YOUR_REGION | docker login --username AWS --password-stdin YOUR_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com
+
+# Build and push backend
+docker build -t agroconnect-backend ./backend
+docker tag agroconnect-backend:latest YOUR_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/agroconnect-backend:latest
+docker push YOUR_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/agroconnect-backend:latest
+
+# Build and push frontend
+docker build -t agroconnect-frontend ./frontend
+docker tag agroconnect-frontend:latest YOUR_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/agroconnect-frontend:latest
+docker push YOUR_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/agroconnect-frontend:latest
+```
+
+#### Step 3 — Create RDS PostgreSQL
+
+In AWS Console → RDS → Create database:
+- Engine: PostgreSQL 16
+- Template: Free tier (for testing) or Production
+- DB name: `agroconnect`
+- Username/password: save these for Step 4
+- VPC: same VPC as your ECS cluster
+- Public access: No (keep it private)
+
+Note the **endpoint URL** — you'll need it in Step 4.
+
+#### Step 4 — Store Secrets in AWS Parameter Store
+
+```bash
+aws ssm put-parameter --name /agroconnect/DB_USERNAME              --value "your_db_user"      --type SecureString
+aws ssm put-parameter --name /agroconnect/DB_PASSWORD              --value "your_db_password"  --type SecureString
+aws ssm put-parameter --name /agroconnect/JWT_SECRET               --value "your_jwt_secret"   --type SecureString
+aws ssm put-parameter --name /agroconnect/CORS_ALLOWED_ORIGINS     --value "http://your-alb-dns.amazonaws.com" --type SecureString
+aws ssm put-parameter --name /agroconnect/BOOTSTRAP_ADMIN_USERNAME --value "admin"             --type SecureString
+aws ssm put-parameter --name /agroconnect/BOOTSTRAP_ADMIN_PASSWORD --value "your_password"     --type SecureString
+```
+
+#### Step 5 — Create CloudWatch Log Groups
+
+```bash
+aws logs create-log-group --log-group-name /ecs/agroconnect-backend
+aws logs create-log-group --log-group-name /ecs/agroconnect-frontend
+```
+
+#### Step 6 — Register the Task Definition
+
+Edit `ecs-task-definition.json` and replace all `YOUR_ACCOUNT_ID`, `YOUR_REGION`, and `YOUR_RDS_ENDPOINT` placeholders with real values. Then:
+
+```bash
+aws ecs register-task-definition --cli-input-json file://ecs-task-definition.json
+```
+
+#### Step 7 — Create ECS Cluster
+
+```bash
+aws ecs create-cluster --cluster-name agroconnect-cluster
+```
+
+#### Step 8 — Create Application Load Balancer
+
+In AWS Console → EC2 → Load Balancers → Create ALB:
+- Scheme: Internet-facing
+- Listener: HTTP port 80
+- Target group: IP type, port 80
+- Register no targets yet (ECS will do this)
+
+Note the **ALB DNS name** and update `CORS_ALLOWED_ORIGINS` in Parameter Store to match.
+
+#### Step 9 — Create ECS Service
+
+In AWS Console → ECS → Clusters → agroconnect-cluster → Create Service:
+- Launch type: Fargate
+- Task definition: agroconnect (the one registered in Step 6)
+- Desired tasks: 1
+- VPC/subnets: same as RDS
+- Security group: allow port 80 inbound
+- Load balancer: select the ALB from Step 8, container: `frontend:80`
+
+#### Step 10 — Access the App
+
+```
+http://YOUR_ALB_DNS_NAME
+```
+
+#### Updating After Code Changes
+
+```bash
+# Rebuild and push new images
+docker build -t agroconnect-backend ./backend
+docker tag agroconnect-backend:latest YOUR_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/agroconnect-backend:latest
+docker push YOUR_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/agroconnect-backend:latest
+
+# Force ECS to pull the new image
+aws ecs update-service --cluster agroconnect-cluster --service agroconnect-service --force-new-deployment
+```
+
+---
+
 ### Common Mistakes to Avoid
 
 #### Secrets & Configuration

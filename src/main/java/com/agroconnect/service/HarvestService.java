@@ -43,6 +43,7 @@ public class HarvestService {
     private final UserRepository userRepository;
     private final AccessControlService accessControlService;
     private final DeliveryTaskService deliveryTaskService;
+    private final CropNormalizerClient cropNormalizerClient;
 
     /**
      * Creates a new harvest for the given farmer. Status is set to {@code AVAILABLE} automatically.
@@ -54,7 +55,7 @@ public class HarvestService {
 
         Harvest harvest = Harvest.builder()
                 .farmer(farmer)
-                .cropName(request.getCropName())
+                .cropName(cropNormalizerClient.normalize(request.getCropName()))
                 .quantity(request.getQuantity())
                 .harvestDate(request.getHarvestDate())
                 .expectedPrice(request.getExpectedPrice())
@@ -81,7 +82,7 @@ public class HarvestService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only available harvests can be edited");
         }
 
-        harvest.setCropName(request.getCropName());
+        harvest.setCropName(cropNormalizerClient.normalize(request.getCropName()));
         harvest.setQuantity(request.getQuantity());
         harvest.setHarvestDate(request.getHarvestDate());
         harvest.setExpectedPrice(request.getExpectedPrice());
