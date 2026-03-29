@@ -32,6 +32,7 @@ public class CropNormalizerClient {
         CROP_DICTIONARY.put("alu", "Potato");  CROP_DICTIONARY.put("potato", "Potato");
         // Onion
         CROP_DICTIONARY.put("pyaz", "Onion");  CROP_DICTIONARY.put("piyaz", "Onion");
+        CROP_DICTIONARY.put("pyaj", "Onion");
         CROP_DICTIONARY.put("pyaaz", "Onion"); CROP_DICTIONARY.put("kanda", "Onion");
         CROP_DICTIONARY.put("onion", "Onion");
         // Garlic
@@ -83,12 +84,14 @@ public class CropNormalizerClient {
         CROP_DICTIONARY.put("arhar", "Pigeon Pea"); CROP_DICTIONARY.put("tur", "Pigeon Pea");
         CROP_DICTIONARY.put("toor", "Pigeon Pea"); CROP_DICTIONARY.put("pigeon pea", "Pigeon Pea");
         // Carrot
-        CROP_DICTIONARY.put("gajar", "Carrot"); CROP_DICTIONARY.put("carrot", "Carrot");
+        CROP_DICTIONARY.put("gajar", "Carrot");  CROP_DICTIONARY.put("gaajar", "Carrot");
+        CROP_DICTIONARY.put("carrot", "Carrot");
         // Radish
-        CROP_DICTIONARY.put("mooli", "Radish"); CROP_DICTIONARY.put("muli", "Radish");
-        CROP_DICTIONARY.put("radish", "Radish");
+        CROP_DICTIONARY.put("mooli", "Radish");  CROP_DICTIONARY.put("muli", "Radish");
+        CROP_DICTIONARY.put("moori", "Radish");  CROP_DICTIONARY.put("radish", "Radish");
         // Spinach
-        CROP_DICTIONARY.put("palak", "Spinach"); CROP_DICTIONARY.put("spinach", "Spinach");
+        CROP_DICTIONARY.put("palak", "Spinach"); CROP_DICTIONARY.put("paalak", "Spinach");
+        CROP_DICTIONARY.put("saag", "Spinach");  CROP_DICTIONARY.put("spinach", "Spinach");
         // Fenugreek
         CROP_DICTIONARY.put("methi", "Fenugreek"); CROP_DICTIONARY.put("fenugreek", "Fenugreek");
         // Coriander
@@ -99,30 +102,74 @@ public class CropNormalizerClient {
         CROP_DICTIONARY.put("lalmirch", "Chilli"); CROP_DICTIONARY.put("chilli", "Chilli");
         CROP_DICTIONARY.put("chili", "Chilli");    CROP_DICTIONARY.put("pepper", "Chilli");
         // Brinjal / Eggplant
-        CROP_DICTIONARY.put("baingan", "Brinjal"); CROP_DICTIONARY.put("baigan", "Brinjal");
-        CROP_DICTIONARY.put("brinjal", "Brinjal"); CROP_DICTIONARY.put("eggplant", "Brinjal");
+        CROP_DICTIONARY.put("baingan", "Brinjal");  CROP_DICTIONARY.put("baigan", "Brinjal");
+        CROP_DICTIONARY.put("begun", "Brinjal");    CROP_DICTIONARY.put("vangi", "Brinjal");
+        CROP_DICTIONARY.put("ringna", "Brinjal");   CROP_DICTIONARY.put("ringana", "Brinjal");
+        CROP_DICTIONARY.put("brinjal", "Brinjal");  CROP_DICTIONARY.put("eggplant", "Brinjal");
         // Okra
-        CROP_DICTIONARY.put("bhindi", "Okra"); CROP_DICTIONARY.put("ladyfinger", "Okra");
+        CROP_DICTIONARY.put("bhindi", "Okra");      CROP_DICTIONARY.put("bhende", "Okra");
+        CROP_DICTIONARY.put("lady finger", "Okra"); CROP_DICTIONARY.put("ladyfinger", "Okra");
         CROP_DICTIONARY.put("okra", "Okra");
         // Pumpkin
-        CROP_DICTIONARY.put("kaddu", "Pumpkin"); CROP_DICTIONARY.put("pumpkin", "Pumpkin");
+        CROP_DICTIONARY.put("kaddu", "Pumpkin");    CROP_DICTIONARY.put("kaddoo", "Pumpkin");
+        CROP_DICTIONARY.put("sitaphal", "Pumpkin"); CROP_DICTIONARY.put("pumpkin", "Pumpkin");
         // Bottle Gourd
-        CROP_DICTIONARY.put("lauki", "Bottle Gourd"); CROP_DICTIONARY.put("dudhi", "Bottle Gourd");
-        CROP_DICTIONARY.put("bottle gourd", "Bottle Gourd");
+        CROP_DICTIONARY.put("lauki", "Bottle Gourd");  CROP_DICTIONARY.put("loki", "Bottle Gourd");
+        CROP_DICTIONARY.put("louki", "Bottle Gourd");  CROP_DICTIONARY.put("ghia", "Bottle Gourd");
+        CROP_DICTIONARY.put("ghiya", "Bottle Gourd");  CROP_DICTIONARY.put("dudhi", "Bottle Gourd");
+        CROP_DICTIONARY.put("doodhi", "Bottle Gourd"); CROP_DICTIONARY.put("bottle gourd", "Bottle Gourd");
         // Bitter Gourd
-        CROP_DICTIONARY.put("karela", "Bitter Gourd"); CROP_DICTIONARY.put("bitter gourd", "Bitter Gourd");
+        CROP_DICTIONARY.put("karela", "Bitter Gourd");  CROP_DICTIONARY.put("karella", "Bitter Gourd");
+        CROP_DICTIONARY.put("kerela", "Bitter Gourd");  CROP_DICTIONARY.put("bitter gourd", "Bitter Gourd");
         // Cucumber
         CROP_DICTIONARY.put("kheera", "Cucumber"); CROP_DICTIONARY.put("khira", "Cucumber");
-        CROP_DICTIONARY.put("cucumber", "Cucumber");
+        CROP_DICTIONARY.put("kakdi", "Cucumber");  CROP_DICTIONARY.put("kakri", "Cucumber");
+        CROP_DICTIONARY.put("kakadi", "Cucumber"); CROP_DICTIONARY.put("cucumber", "Cucumber");
         // Cauliflower
-        CROP_DICTIONARY.put("gobhi", "Cauliflower");      CROP_DICTIONARY.put("phulgobi", "Cauliflower");
-        CROP_DICTIONARY.put("phool gobhi", "Cauliflower"); CROP_DICTIONARY.put("cauliflower", "Cauliflower");
+        CROP_DICTIONARY.put("gobhi", "Cauliflower");       CROP_DICTIONARY.put("phulgobi", "Cauliflower");
+        CROP_DICTIONARY.put("phool gobhi", "Cauliflower"); CROP_DICTIONARY.put("phool gobi", "Cauliflower");
+        CROP_DICTIONARY.put("phulgobhi", "Cauliflower");   CROP_DICTIONARY.put("cauliflower", "Cauliflower");
         // Cabbage
-        CROP_DICTIONARY.put("bandgobi", "Cabbage"); CROP_DICTIONARY.put("pattagonbi", "Cabbage");
-        CROP_DICTIONARY.put("cabbage", "Cabbage");
+        CROP_DICTIONARY.put("bandgobi", "Cabbage");   CROP_DICTIONARY.put("bandgobhi", "Cabbage");
+        CROP_DICTIONARY.put("band gobhi", "Cabbage"); CROP_DICTIONARY.put("band gobi", "Cabbage");
+        CROP_DICTIONARY.put("bund gobhi", "Cabbage"); CROP_DICTIONARY.put("bundgobi", "Cabbage");
+        CROP_DICTIONARY.put("patta gobhi", "Cabbage"); CROP_DICTIONARY.put("pattagobhi", "Cabbage");
+        CROP_DICTIONARY.put("pattagonbi", "Cabbage"); CROP_DICTIONARY.put("cabbage", "Cabbage");
         // Peas
-        CROP_DICTIONARY.put("matar", "Peas"); CROP_DICTIONARY.put("mattar", "Peas");
-        CROP_DICTIONARY.put("peas", "Peas");
+        CROP_DICTIONARY.put("matar", "Peas");      CROP_DICTIONARY.put("mattar", "Peas");
+        CROP_DICTIONARY.put("mutter", "Peas");     CROP_DICTIONARY.put("muttar", "Peas");
+        CROP_DICTIONARY.put("hari matar", "Peas"); CROP_DICTIONARY.put("peas", "Peas");
+        // Ridge Gourd
+        CROP_DICTIONARY.put("turai", "Ridge Gourd");  CROP_DICTIONARY.put("torai", "Ridge Gourd");
+        CROP_DICTIONARY.put("turiya", "Ridge Gourd"); CROP_DICTIONARY.put("ridge gourd", "Ridge Gourd");
+        // Drumstick
+        CROP_DICTIONARY.put("sahjan", "Drumstick");  CROP_DICTIONARY.put("saijan", "Drumstick");
+        CROP_DICTIONARY.put("moringa", "Drumstick"); CROP_DICTIONARY.put("drumstick", "Drumstick");
+        // Sweet Potato
+        CROP_DICTIONARY.put("shakarkand", "Sweet Potato"); CROP_DICTIONARY.put("shakarkandi", "Sweet Potato");
+        CROP_DICTIONARY.put("sweet potato", "Sweet Potato");
+        // Taro / Colocasia
+        CROP_DICTIONARY.put("arbi", "Taro");  CROP_DICTIONARY.put("arvi", "Taro");
+        CROP_DICTIONARY.put("taro", "Taro");  CROP_DICTIONARY.put("colocasia", "Taro");
+        // Turnip
+        CROP_DICTIONARY.put("shalgam", "Turnip"); CROP_DICTIONARY.put("turnip", "Turnip");
+        // Beetroot
+        CROP_DICTIONARY.put("chukandar", "Beetroot"); CROP_DICTIONARY.put("beetroot", "Beetroot");
+        CROP_DICTIONARY.put("beet", "Beetroot");
+        // French Beans / Green Beans
+        CROP_DICTIONARY.put("beans", "French Beans");        CROP_DICTIONARY.put("french beans", "French Beans");
+        CROP_DICTIONARY.put("green beans", "French Beans");  CROP_DICTIONARY.put("farasbi", "French Beans");
+        CROP_DICTIONARY.put("pharasbi", "French Beans");     CROP_DICTIONARY.put("frasbi", "French Beans");
+        CROP_DICTIONARY.put("sem", "French Beans");          CROP_DICTIONARY.put("seam", "French Beans");
+        // Cowpea / Lobia / Bodi
+        CROP_DICTIONARY.put("bodi", "Cowpea");    CROP_DICTIONARY.put("bori", "Cowpea");
+        CROP_DICTIONARY.put("lobia", "Cowpea");   CROP_DICTIONARY.put("lobiya", "Cowpea");
+        CROP_DICTIONARY.put("lobhia", "Cowpea");  CROP_DICTIONARY.put("cowpea", "Cowpea");
+        CROP_DICTIONARY.put("long beans", "Cowpea");
+        // Cluster Beans / Guar
+        CROP_DICTIONARY.put("guar", "Cluster Beans");    CROP_DICTIONARY.put("gawar", "Cluster Beans");
+        CROP_DICTIONARY.put("guvar", "Cluster Beans");   CROP_DICTIONARY.put("gavar", "Cluster Beans");
+        CROP_DICTIONARY.put("cluster beans", "Cluster Beans");
         // Banana
         CROP_DICTIONARY.put("kela", "Banana"); CROP_DICTIONARY.put("banana", "Banana");
         // Mango
