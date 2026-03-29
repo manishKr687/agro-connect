@@ -29,6 +29,7 @@ com\agroconnect\model\Harvest$HarvestBuilder.class
 com\agroconnect\security\AuthRateLimitingFilter.class
 com\agroconnect\controller\UserController.class
 com\agroconnect\repository\DeliveryTaskRepository.class
+com\agroconnect\service\CropNormalizerClient.class
 com\agroconnect\AgroConnectApplication.class
 com\agroconnect\dto\ApproveAssignmentRequest.class
 com\agroconnect\service\MatchingService.class
@@ -38,11 +39,13 @@ com\agroconnect\model\User$UserBuilder.class
 com\agroconnect\dto\DemandChangeRequest.class
 com\agroconnect\service\HarvestService.class
 com\agroconnect\dto\TaskExceptionResponse$TaskExceptionResponseBuilder.class
+com\agroconnect\controller\CropController.class
 com\agroconnect\dto\LoginRequest.class
 com\agroconnect\repository\DemandRepository.class
 com\agroconnect\model\DeliveryTask$Status.class
 com\agroconnect\service\DeliveryTaskService$1.class
 com\agroconnect\service\DeliveryTaskService.class
+com\agroconnect\config\AppConfig.class
 com\agroconnect\security\JwtAuthenticationFilter.class
 com\agroconnect\security\JwtUtil.class
 com\agroconnect\service\AccessControlService.class
