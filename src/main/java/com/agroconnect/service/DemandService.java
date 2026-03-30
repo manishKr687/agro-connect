@@ -155,7 +155,9 @@ public class DemandService {
         }
 
         demand.setStatus(request.getStatus());
-        return demandRepository.save(demand);
+        Demand saved = demandRepository.save(demand);
+        broadcastOpenDemands();
+        return saved;
     }
 
     /**
