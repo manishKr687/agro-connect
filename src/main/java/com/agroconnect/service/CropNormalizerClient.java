@@ -24,6 +24,68 @@ public class CropNormalizerClient {
     private static final List<String> DICT_KEYS;
 
     static {
+        // ── Devanagari (Hindi script) entries ──────────────────────────────
+        CROP_DICTIONARY.put("टमाटर", "Tomato");
+        CROP_DICTIONARY.put("आलू", "Potato");      CROP_DICTIONARY.put("आलु", "Potato");
+        CROP_DICTIONARY.put("प्याज", "Onion");     CROP_DICTIONARY.put("प्याज़", "Onion");
+        CROP_DICTIONARY.put("लहसुन", "Garlic");
+        CROP_DICTIONARY.put("अदरक", "Ginger");
+        CROP_DICTIONARY.put("गेहूं", "Wheat");     CROP_DICTIONARY.put("गेहूँ", "Wheat");
+        CROP_DICTIONARY.put("चावल", "Rice");       CROP_DICTIONARY.put("धान", "Rice");
+        CROP_DICTIONARY.put("मक्का", "Maize");     CROP_DICTIONARY.put("मकई", "Maize");
+        CROP_DICTIONARY.put("सरसों", "Mustard");   CROP_DICTIONARY.put("सरसो", "Mustard");
+        CROP_DICTIONARY.put("गन्ना", "Sugarcane"); CROP_DICTIONARY.put("ईख", "Sugarcane");
+        CROP_DICTIONARY.put("कपास", "Cotton");
+        CROP_DICTIONARY.put("सोयाबीन", "Soybean"); CROP_DICTIONARY.put("सोया", "Soybean");
+        CROP_DICTIONARY.put("मूंगफली", "Groundnut");
+        CROP_DICTIONARY.put("चना", "Chickpea");    CROP_DICTIONARY.put("छोले", "Chickpea");
+        CROP_DICTIONARY.put("मसूर", "Lentil");     CROP_DICTIONARY.put("मसूरी", "Lentil");
+        CROP_DICTIONARY.put("मूंग", "Green Gram");
+        CROP_DICTIONARY.put("उड़द", "Black Gram");  CROP_DICTIONARY.put("उरद", "Black Gram");
+        CROP_DICTIONARY.put("अरहर", "Pigeon Pea"); CROP_DICTIONARY.put("तूर", "Pigeon Pea");
+        CROP_DICTIONARY.put("गाजर", "Carrot");
+        CROP_DICTIONARY.put("मूली", "Radish");
+        CROP_DICTIONARY.put("पालक", "Spinach");
+        CROP_DICTIONARY.put("मेथी", "Fenugreek");
+        CROP_DICTIONARY.put("धनिया", "Coriander");
+        CROP_DICTIONARY.put("मिर्च", "Chilli");    CROP_DICTIONARY.put("मिर्ची", "Chilli");
+        CROP_DICTIONARY.put("बैंगन", "Brinjal");
+        CROP_DICTIONARY.put("भिंडी", "Okra");
+        CROP_DICTIONARY.put("कद्दू", "Pumpkin");
+        CROP_DICTIONARY.put("लौकी", "Bottle Gourd"); CROP_DICTIONARY.put("दूधी", "Bottle Gourd");
+        CROP_DICTIONARY.put("करेला", "Bitter Gourd");
+        CROP_DICTIONARY.put("खीरा", "Cucumber");   CROP_DICTIONARY.put("ककड़ी", "Cucumber");
+        CROP_DICTIONARY.put("गोभी", "Cauliflower"); CROP_DICTIONARY.put("फूल गोभी", "Cauliflower");
+        CROP_DICTIONARY.put("बंद गोभी", "Cabbage"); CROP_DICTIONARY.put("पत्ता गोभी", "Cabbage");
+        CROP_DICTIONARY.put("मटर", "Peas");
+        CROP_DICTIONARY.put("तोरई", "Ridge Gourd"); CROP_DICTIONARY.put("तुरई", "Ridge Gourd");
+        CROP_DICTIONARY.put("सहजन", "Drumstick");
+        CROP_DICTIONARY.put("शकरकंद", "Sweet Potato");
+        CROP_DICTIONARY.put("अरबी", "Taro");        CROP_DICTIONARY.put("अरवी", "Taro");
+        CROP_DICTIONARY.put("शलजम", "Turnip");
+        CROP_DICTIONARY.put("चुकंदर", "Beetroot");
+        CROP_DICTIONARY.put("फ्रेंच बीन्स", "French Beans"); CROP_DICTIONARY.put("सेम", "French Beans");
+        CROP_DICTIONARY.put("लोबिया", "Cowpea");    CROP_DICTIONARY.put("बोड़ी", "Cowpea");
+        CROP_DICTIONARY.put("ग्वार", "Cluster Beans");
+        CROP_DICTIONARY.put("केला", "Banana");
+        CROP_DICTIONARY.put("आम", "Mango");
+        CROP_DICTIONARY.put("अमरूद", "Guava");
+        CROP_DICTIONARY.put("पपीता", "Papaya");
+        CROP_DICTIONARY.put("तरबूज", "Watermelon");
+        CROP_DICTIONARY.put("अंगूर", "Grapes");
+        CROP_DICTIONARY.put("अनार", "Pomegranate");
+        CROP_DICTIONARY.put("नींबू", "Lemon");      CROP_DICTIONARY.put("नीम्बू", "Lemon");
+        CROP_DICTIONARY.put("हल्दी", "Turmeric");
+        CROP_DICTIONARY.put("जीरा", "Cumin");
+        CROP_DICTIONARY.put("तिल", "Sesame");
+        CROP_DICTIONARY.put("ज्वार", "Sorghum");
+        CROP_DICTIONARY.put("बाजरा", "Pearl Millet");
+        CROP_DICTIONARY.put("रागी", "Finger Millet");
+        CROP_DICTIONARY.put("जौ", "Barley");
+        CROP_DICTIONARY.put("सूरजमुखी", "Sunflower");
+        CROP_DICTIONARY.put("अरंडी", "Castor");
+        CROP_DICTIONARY.put("जूट", "Jute");         CROP_DICTIONARY.put("पाट", "Jute");
+        // ── Romanized Hinglish entries ──────────────────────────────────────
         // Tomato
         CROP_DICTIONARY.put("tamatar", "Tomato"); CROP_DICTIONARY.put("tamater", "Tomato");
         CROP_DICTIONARY.put("tamato", "Tomato");  CROP_DICTIONARY.put("tomato", "Tomato");

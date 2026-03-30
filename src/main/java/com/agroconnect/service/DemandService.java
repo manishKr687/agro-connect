@@ -2,6 +2,7 @@ package com.agroconnect.service;
 
 import com.agroconnect.dto.DemandChangeRequest;
 import com.agroconnect.dto.DemandRequest;
+import com.agroconnect.dto.CropDemandSummary;
 import com.agroconnect.model.DeliveryTask;
 import com.agroconnect.dto.UpdateDemandStatusRequest;
 import com.agroconnect.model.Demand;
@@ -46,6 +47,7 @@ public class DemandService {
     private final AccessControlService accessControlService;
     private final DeliveryTaskService deliveryTaskService;
     private final CropNormalizerClient cropNormalizerClient;
+    private final DemandEventService demandEventService;
 
     public Demand createDemand(Long retailerId, DemandRequest request) {
         User retailer = accessControlService.requireCurrentUser(retailerId, Role.RETAILER);
@@ -59,7 +61,9 @@ public class DemandService {
                 .status(Demand.Status.OPEN)
                 .build();
 
-        return demandRepository.save(demand);
+        Demand saved = demandRepository.save(demand);
+        broadcastOpenDemands();
+        return saved;
     }
 
     public List<Demand> getDemandsForRetailer(Long retailerId) {
@@ -99,6 +103,7 @@ public class DemandService {
         }
 
         demandRepository.delete(demand);
+        broadcastOpenDemands();
     }
 
     /**
@@ -204,5 +209,10 @@ public class DemandService {
         demand.setRequestedRequiredDate(null);
         demand.setRequestedTargetPrice(null);
         demand.setChangeRequestReason(null);
+    }
+
+    private void broadcastOpenDemands() {
+        List<CropDemandSummary> summaries = demandRepository.findOpenDemandSummaries();
+        demandEventService.broadcast(summaries);
     }
 }
