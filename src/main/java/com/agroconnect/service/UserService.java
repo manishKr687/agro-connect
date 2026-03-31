@@ -129,6 +129,7 @@ public class UserService {
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
+            tokenBlacklistService.revokeUser(user.getUsername());
         }
 
         return userRepository.save(user);
