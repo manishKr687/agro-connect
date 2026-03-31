@@ -45,6 +45,8 @@ class UserServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(loginAttemptService.isLocked(anyString())).thenReturn(false);
+        lenient().when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+        lenient().when(userRepository.findByPhoneNumber(anyString())).thenReturn(Optional.empty());
     }
 
     @Test
@@ -52,6 +54,7 @@ class UserServiceTest {
         RegisterUserRequest request = new RegisterUserRequest();
         request.setUsername("farmer1");
         request.setPassword("password123");
+        request.setEmail("farmer1@example.com");
         request.setRole(Role.FARMER);
 
         when(userRepository.findByUsername("farmer1")).thenReturn(Optional.empty());
@@ -61,6 +64,7 @@ class UserServiceTest {
         User result = userService.register(request);
 
         assertThat(result.getUsername()).isEqualTo("farmer1");
+        assertThat(result.getEmail()).isEqualTo("farmer1@example.com");
         assertThat(result.getRole()).isEqualTo(Role.FARMER);
     }
 
@@ -69,6 +73,7 @@ class UserServiceTest {
         RegisterUserRequest request = new RegisterUserRequest();
         request.setUsername("retailer1");
         request.setPassword("password123");
+        request.setPhoneNumber("+919876543210");
         request.setRole(Role.RETAILER);
 
         when(userRepository.findByUsername("retailer1")).thenReturn(Optional.empty());
@@ -78,6 +83,7 @@ class UserServiceTest {
         User result = userService.register(request);
 
         assertThat(result.getUsername()).isEqualTo("retailer1");
+        assertThat(result.getPhoneNumber()).isEqualTo("+919876543210");
         assertThat(result.getRole()).isEqualTo(Role.RETAILER);
     }
 
@@ -86,6 +92,7 @@ class UserServiceTest {
         RegisterUserRequest request = new RegisterUserRequest();
         request.setUsername("sneaky");
         request.setPassword("password123");
+        request.setEmail("admin@example.com");
         request.setRole(Role.ADMIN);
 
         assertThatThrownBy(() -> userService.register(request))
@@ -101,6 +108,7 @@ class UserServiceTest {
         RegisterUserRequest request = new RegisterUserRequest();
         request.setUsername("sneaky");
         request.setPassword("password123");
+        request.setPhoneNumber("+919876543210");
         request.setRole(Role.AGENT);
 
         assertThatThrownBy(() -> userService.register(request))
@@ -116,10 +124,11 @@ class UserServiceTest {
         RegisterUserRequest request = new RegisterUserRequest();
         request.setUsername("existing");
         request.setPassword("password123");
+        request.setEmail("existing@example.com");
         request.setRole(Role.FARMER);
 
         when(userRepository.findByUsername("existing"))
-                .thenReturn(Optional.of(User.builder().username("existing").build()));
+                .thenReturn(Optional.of(User.builder().id(99L).username("existing").build()));
 
         assertThatThrownBy(() -> userService.register(request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -127,6 +136,19 @@ class UserServiceTest {
                 .isEqualTo(HttpStatus.CONFLICT);
 
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void register_missingRecoveryContact_throwsBadRequest() {
+        RegisterUserRequest request = new RegisterUserRequest();
+        request.setUsername("farmer2");
+        request.setPassword("password123");
+        request.setRole(Role.FARMER);
+
+        assertThatThrownBy(() -> userService.register(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test

@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -50,13 +52,16 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Role " + request.getRole() + " cannot self-register");
         }
 
-        userRepository.findByUsername(request.getUsername()).ifPresent(existingUser -> {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
-        });
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        String normalizedPhoneNumber = normalizePhoneNumber(request.getPhoneNumber());
+        validateRecoveryContacts(normalizedEmail, normalizedPhoneNumber);
+        assertUniqueIdentity(request.getUsername(), normalizedEmail, normalizedPhoneNumber, null);
 
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .email(normalizedEmail)
+                .phoneNumber(normalizedPhoneNumber)
                 .role(request.getRole())
                 .build();
 
@@ -71,14 +76,16 @@ public class UserService {
      */
     public User createUserForAdmin(Long adminId, RegisterUserRequest request) {
         accessControlService.requireAdmin(adminId);
-
-        userRepository.findByUsername(request.getUsername()).ifPresent(existingUser -> {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
-        });
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        String normalizedPhoneNumber = normalizePhoneNumber(request.getPhoneNumber());
+        validateRecoveryContacts(normalizedEmail, normalizedPhoneNumber);
+        assertUniqueIdentity(request.getUsername(), normalizedEmail, normalizedPhoneNumber, null);
 
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .email(normalizedEmail)
+                .phoneNumber(normalizedPhoneNumber)
                 .role(request.getRole())
                 .build();
 
@@ -120,14 +127,14 @@ public class UserService {
         accessControlService.requireAdmin(adminId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-
-        userRepository.findByUsername(request.getUsername()).ifPresent(existingUser -> {
-            if (!existingUser.getId().equals(userId)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
-            }
-        });
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        String normalizedPhoneNumber = normalizePhoneNumber(request.getPhoneNumber());
+        validateRecoveryContacts(normalizedEmail, normalizedPhoneNumber);
+        assertUniqueIdentity(request.getUsername(), normalizedEmail, normalizedPhoneNumber, userId);
 
         user.setUsername(request.getUsername().trim());
+        user.setEmail(normalizedEmail);
+        user.setPhoneNumber(normalizedPhoneNumber);
         user.setRole(request.getRole());
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
@@ -166,5 +173,51 @@ public class UserService {
         userRepository.save(currentUser);
         tokenBlacklistService.revokeUser(currentUser.getUsername());
         refreshTokenService.revokeUserSessions(currentUser.getUsername());
+    }
+
+    private void validateRecoveryContacts(String email, String phoneNumber) {
+        if ((email == null || email.isBlank()) && (phoneNumber == null || phoneNumber.isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Either email or phone number is required");
+        }
+    }
+
+    private void assertUniqueIdentity(String username, String email, String phoneNumber, Long currentUserId) {
+        userRepository.findByUsername(username.trim()).ifPresent(existingUser -> {
+            if (!Objects.equals(existingUser.getId(), currentUserId)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
+            }
+        });
+
+        if (email != null) {
+            userRepository.findByEmail(email).ifPresent(existingUser -> {
+                if (!Objects.equals(existingUser.getId(), currentUserId)) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+                }
+            });
+        }
+
+        if (phoneNumber != null) {
+            userRepository.findByPhoneNumber(phoneNumber).ifPresent(existingUser -> {
+                if (!Objects.equals(existingUser.getId(), currentUserId)) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Phone number already exists");
+                }
+            });
+        }
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizePhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            return null;
+        }
+
+        return phoneNumber.trim().replaceAll("[\\s()\\-]", "");
     }
 }

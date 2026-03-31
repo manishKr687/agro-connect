@@ -38,6 +38,14 @@ public class User {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
+    /** Recovery email used for password reset links. */
+    @Column(unique = true)
+    private String email;
+
+    /** Recovery phone number used for password reset OTPs. */
+    @Column(name = "phone_number", unique = true)
+    private String phoneNumber;
+
     /** Determines what actions this user can perform. Stored as a string in the DB. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

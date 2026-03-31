@@ -7,6 +7,7 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repo
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\DeliveryTaskService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\TokenBlacklistService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\HarvestRequest.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\ResetPasswordRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\HarvestController.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\UserService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\AuthRateLimitingFilter.java
@@ -14,6 +15,8 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\secu
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\CustomUserDetailsService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\Demand.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\UpdateHarvestStatusRequest.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\ForgotPasswordResponse.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\enums\PasswordResetChannel.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\HarvestWithdrawalRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\TaskExceptionResponse.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\DemandService.java
@@ -33,15 +36,20 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\AuthCookieService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\RefreshTokenService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\AccessControlService.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\PasswordResetChallenge.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\JwtAuthenticationFilter.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\PasswordResetService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\RevokedUserRepository.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\SseRateLimitingFilter.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\CreateDeliveryTaskRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\UpdateUserRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\ApproveAssignmentRequest.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\PasswordResetChallengeRepository.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\HarvestRepository.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\PasswordResetNotificationService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\CancelTaskRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\UserRepository.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\ForgotPasswordRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\CachedBodyHttpServletRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\UserController.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\RegisterUserRequest.java
@@ -68,4 +76,5 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\conf
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\User.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\MatchingService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\AdminTaskController.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\LoggingPasswordResetNotificationService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\AuthController.java

@@ -1,13 +1,17 @@
 package com.agroconnect.controller;
 
 import com.agroconnect.dto.AuthResponse;
+import com.agroconnect.dto.ForgotPasswordRequest;
+import com.agroconnect.dto.ForgotPasswordResponse;
 import com.agroconnect.dto.LoginRequest;
 import com.agroconnect.dto.RegisterUserRequest;
+import com.agroconnect.dto.ResetPasswordRequest;
 import com.agroconnect.model.User;
 import com.agroconnect.security.AuthCookieService;
 import com.agroconnect.security.CustomUserDetails;
 import com.agroconnect.security.InvalidRefreshTokenException;
 import com.agroconnect.security.JwtUtil;
+import com.agroconnect.security.PasswordResetService;
 import com.agroconnect.security.RefreshTokenService;
 import com.agroconnect.security.TokenBlacklistService;
 import com.agroconnect.service.UserService;
@@ -35,6 +39,7 @@ public class AuthController {
     private final TokenBlacklistService tokenBlacklistService;
     private final AuthCookieService authCookieService;
     private final RefreshTokenService refreshTokenService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterUserRequest request,
@@ -83,6 +88,18 @@ public class AuthController {
             authCookieService.clearRefreshCookie(headers, request.isSecure());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).headers(headers).build();
         }
+    }
+
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ForgotPasswordResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return passwordResetService.requestReset(request);
+    }
+
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
     }
 
     private ResponseEntity<AuthResponse> buildAuthResponse(User user, HttpServletRequest request, HttpStatus status) {

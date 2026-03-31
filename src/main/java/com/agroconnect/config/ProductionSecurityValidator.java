@@ -34,12 +34,41 @@ public class ProductionSecurityValidator {
     @Value("${app.bootstrap.admin.password:}")
     private String bootstrapAdminPassword;
 
+    @Value("${app.password-reset.mail.enabled:false}")
+    private boolean passwordResetMailEnabled;
+
+    @Value("${app.password-reset.mail.from:}")
+    private String passwordResetMailFrom;
+
+    @Value("${spring.mail.host:}")
+    private String mailHost;
+
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
+    @Value("${app.password-reset.sms.enabled:false}")
+    private boolean passwordResetSmsEnabled;
+
+    @Value("${app.password-reset.sms.provider:TWILIO}")
+    private String smsProvider;
+
+    @Value("${app.password-reset.sms.from:}")
+    private String smsFrom;
+
+    @Value("${app.password-reset.sms.twilio.account-sid:}")
+    private String twilioAccountSid;
+
+    @Value("${app.password-reset.sms.twilio.auth-token:}")
+    private String twilioAuthToken;
+
     @PostConstruct
     public void validate() {
         validateJwtSecret();
         validateJwtIssuer();
         validateCorsOrigins();
         validateBootstrapAdmin();
+        validatePasswordResetMail();
+        validatePasswordResetSms();
     }
 
     private void validateJwtSecret() {
@@ -93,6 +122,46 @@ public class ProductionSecurityValidator {
 
         if (passwordSet && bootstrapAdminPassword.length() < MIN_BOOTSTRAP_PASSWORD_LENGTH) {
             throw new IllegalStateException("BOOTSTRAP_ADMIN_PASSWORD must be at least 16 characters in production.");
+        }
+    }
+
+    private void validatePasswordResetMail() {
+        if (!passwordResetMailEnabled) {
+            return;
+        }
+
+        if (passwordResetMailFrom == null || passwordResetMailFrom.isBlank()) {
+            throw new IllegalStateException("PASSWORD_RESET_MAIL_FROM must be set when email password reset delivery is enabled.");
+        }
+
+        if (mailHost == null || mailHost.isBlank()) {
+            throw new IllegalStateException("MAIL_HOST must be set when email password reset delivery is enabled.");
+        }
+
+        if (mailUsername == null || mailUsername.isBlank()) {
+            throw new IllegalStateException("MAIL_USERNAME must be set when email password reset delivery is enabled.");
+        }
+    }
+
+    private void validatePasswordResetSms() {
+        if (!passwordResetSmsEnabled) {
+            return;
+        }
+
+        if (!"TWILIO".equalsIgnoreCase(smsProvider)) {
+            throw new IllegalStateException("Only TWILIO is supported for PASSWORD_RESET_SMS_PROVIDER right now.");
+        }
+
+        if (smsFrom == null || smsFrom.isBlank()) {
+            throw new IllegalStateException("PASSWORD_RESET_SMS_FROM must be set when SMS password reset delivery is enabled.");
+        }
+
+        if (twilioAccountSid == null || twilioAccountSid.isBlank()) {
+            throw new IllegalStateException("TWILIO_ACCOUNT_SID must be set when SMS password reset delivery is enabled.");
+        }
+
+        if (twilioAuthToken == null || twilioAuthToken.isBlank()) {
+            throw new IllegalStateException("TWILIO_AUTH_TOKEN must be set when SMS password reset delivery is enabled.");
         }
     }
 }

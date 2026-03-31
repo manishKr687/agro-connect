@@ -4,6 +4,7 @@ import com.agroconnect.model.User;
 import com.agroconnect.model.enums.Role;
 import com.agroconnect.repository.BlacklistedTokenRepository;
 import com.agroconnect.repository.LoginAttemptRecordRepository;
+import com.agroconnect.repository.PasswordResetChallengeRepository;
 import com.agroconnect.repository.RefreshTokenSessionRepository;
 import com.agroconnect.repository.RevokedUserRepository;
 import com.agroconnect.repository.UserRepository;
@@ -58,6 +59,9 @@ class SecurityIntegrationTest {
     private RefreshTokenSessionRepository refreshTokenSessionRepository;
 
     @Autowired
+    private PasswordResetChallengeRepository passwordResetChallengeRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Value("${app.jwt.secret}")
@@ -72,16 +76,21 @@ class SecurityIntegrationTest {
         revokedUserRepository.deleteAll();
         loginAttemptRecordRepository.deleteAll();
         refreshTokenSessionRepository.deleteAll();
+        passwordResetChallengeRepository.deleteAll();
         userRepository.deleteAll();
 
         userRepository.save(User.builder()
                 .username("admin_user")
+                .email("admin@example.com")
+                .phoneNumber("+919999999999")
                 .password(passwordEncoder.encode("Password123"))
                 .role(Role.ADMIN)
                 .build());
 
         userRepository.save(User.builder()
                 .username("farmer_user")
+                .email("farmer@example.com")
+                .phoneNumber("+918888888888")
                 .password(passwordEncoder.encode("Password123"))
                 .role(Role.FARMER)
                 .build());
@@ -201,6 +210,76 @@ class SecurityIntegrationTest {
         loginAndExtractCookies("admin_user", "NewPassword123");
     }
 
+    @Test
+    void forgotPasswordWithEmailShouldResetPasswordAndRevokeOldSessions() throws Exception {
+        AuthCookies cookies = loginAndExtractCookies("admin_user", "Password123");
+
+        MvcResult forgotResult = mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "channel": "EMAIL",
+                                  "identifier": "admin@example.com"
+                                }
+                                """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.previewToken").isNotEmpty())
+                .andReturn();
+
+        String previewToken = JsonTestHelper.readString(forgotResult.getResponse().getContentAsString(), "previewToken");
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "channel": "EMAIL",
+                                  "identifier": "admin@example.com",
+                                  "token": "%s",
+                                  "newPassword": "RecoveredPassword123"
+                                }
+                                """.formatted(previewToken)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/users/me").cookie(cookies.authCookie()))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/auth/refresh").cookie(cookies.refreshCookie()))
+                .andExpect(status().isUnauthorized());
+
+        loginAndExtractCookies("admin_user", "RecoveredPassword123");
+    }
+
+    @Test
+    void forgotPasswordWithSmsShouldResetPassword() throws Exception {
+        MvcResult forgotResult = mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "channel": "SMS",
+                                  "identifier": "+918888888888"
+                                }
+                                """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.previewOtp").isNotEmpty())
+                .andReturn();
+
+        String previewOtp = JsonTestHelper.readString(forgotResult.getResponse().getContentAsString(), "previewOtp");
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "channel": "SMS",
+                                  "identifier": "+918888888888",
+                                  "otp": "%s",
+                                  "newPassword": "RecoveredSms123"
+                                }
+                                """.formatted(previewOtp)))
+                .andExpect(status().isNoContent());
+
+        loginAndExtractCookies("farmer_user", "RecoveredSms123");
+    }
+
     private AuthCookies loginAndExtractCookies(String username, String password) throws Exception {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -231,5 +310,17 @@ class SecurityIntegrationTest {
     }
 
     private record AuthCookies(MockCookie authCookie, MockCookie refreshCookie) {
+    }
+
+    private static final class JsonTestHelper {
+        private static String readString(String json, String fieldName) {
+            String token = "\"%s\":\"".formatted(fieldName);
+            int start = json.indexOf(token);
+            assertThat(start).isGreaterThanOrEqualTo(0);
+            int valueStart = start + token.length();
+            int valueEnd = json.indexOf('"', valueStart);
+            assertThat(valueEnd).isGreaterThan(valueStart);
+            return json.substring(valueStart, valueEnd);
+        }
     }
 }
