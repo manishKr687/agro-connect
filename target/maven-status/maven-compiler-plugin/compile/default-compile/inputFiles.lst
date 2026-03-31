@@ -28,6 +28,7 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\secu
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\PublicDashboardController.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\enums\Role.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\RejectDeliveryTaskRequest.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\AuthCookieService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\AccessControlService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\JwtAuthenticationFilter.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\RevokedUserRepository.java

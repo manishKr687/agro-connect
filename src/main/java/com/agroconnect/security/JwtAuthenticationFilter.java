@@ -16,21 +16,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Optional;
 
 /**
- * Servlet filter that authenticates requests by validating the JWT in the
- * {@code Authorization} header.
- *
- * <p>Skips public paths ({@code /api/auth/**}, {@code /api/public/**}) entirely so that
- * a stale or invalid token in localStorage never interferes with login or registration.
- *
- * <p>On protected requests the filter:
- * <ol>
- *   <li>Reads the {@code Authorization: Bearer <token>} header</li>
- *   <li>Rejects tokens that are blacklisted (logged out) or issued before user revocation</li>
- *   <li>Loads the user and validates token signature + expiry</li>
- *   <li>If valid, sets authentication in the {@link SecurityContextHolder}</li>
- * </ol>
+ * Authenticates requests using the JWT stored in the app auth cookie.
  */
 @Component
 @RequiredArgsConstructor
@@ -39,8 +28,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final AuthCookieService authCookieService;
 
-    /** Skip this filter for public endpoints — avoids stale-token interference on login. */
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String uri = request.getRequestURI();
@@ -53,14 +42,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        Optional<String> tokenOptional = authCookieService.extractToken(request);
+        if (tokenOptional.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token = authHeader.substring(7);
+        String token = tokenOptional.get();
         String username;
         Instant issuedAt;
 
@@ -72,19 +60,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Reject blacklisted tokens (explicit logout)
         if (tokenBlacklistService.isTokenBlacklisted(token)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Reject tokens issued before user was revoked (user deletion)
         if (tokenBlacklistService.isUserRevoked(username, issuedAt)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 if (jwtUtil.isTokenValid(token, userDetails)) {
@@ -95,7 +81,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             } catch (UsernameNotFoundException ex) {
-                // Token references a deleted user — treat as unauthenticated
+                // Token references a deleted user; treat as unauthenticated.
             }
         }
 
