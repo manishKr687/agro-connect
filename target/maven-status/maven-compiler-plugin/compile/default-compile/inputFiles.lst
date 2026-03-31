@@ -2,6 +2,7 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\CropNormalizerClient.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\JwtUtil.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\AdminDeliveryTaskController.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\LoginAttemptRecordRepository.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\DeliveryTaskService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\TokenBlacklistService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\HarvestRequest.java
@@ -22,12 +23,14 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\serv
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\Harvest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\DemandRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\MatchSuggestionResponse.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\LoginAttemptRecord.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\LoginAttemptService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\PublicDashboardController.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\enums\Role.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\RejectDeliveryTaskRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\AccessControlService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\JwtAuthenticationFilter.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\RevokedUserRepository.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\SseRateLimitingFilter.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\CreateDeliveryTaskRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\UpdateUserRequest.java
@@ -38,9 +41,11 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repo
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\CachedBodyHttpServletRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\UserController.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\RegisterUserRequest.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\BlacklistedTokenRepository.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\DemandRepository.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\ReassignTaskRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\UpdateDemandStatusRequest.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\RevokedUser.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\DeliveryTaskRepository.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\CustomUserDetails.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\DeliveryTask.java
@@ -49,6 +54,7 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\Agro
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\config\ProductionSecurityValidator.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\AgentDeliveryTaskController.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\CropController.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\BlacklistedToken.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\DemandChangeRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\config\AppConfig.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\DemandEventService.java
