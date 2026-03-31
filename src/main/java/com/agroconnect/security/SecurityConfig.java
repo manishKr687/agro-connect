@@ -35,7 +35,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
  *   <li><b>JWT filter skip</b> — {@link JwtAuthenticationFilter} skips public paths entirely,
  *       so a stale token in localStorage never interferes with login.</li>
  *   <li><b>CORS origins</b> — configured via {@code app.cors.allowed-origins} (comma-separated),
- *       set per-profile (e.g. {@code http://localhost:3000} in dev).</li>
+ *       set per-profile (e.g. {@code http://localhost:5173} in dev).</li>
  * </ul>
  */
 @Configuration

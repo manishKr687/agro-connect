@@ -129,7 +129,7 @@ npm install
 npm start
 ```
 
-Runs on `http://localhost:3000`. Update `src/api/axiosConfig.js` if the backend URL differs.
+Runs on `http://localhost:5173`. Update `src/api/axiosConfig.js` if the backend URL differs.
 
 ---
 
@@ -192,7 +192,7 @@ DB_PASSWORD=your_strong_password
 # Generate with: openssl rand -hex 32
 JWT_SECRET=your_32_char_minimum_secret_key_here
 
-CORS_ALLOWED_ORIGINS=http://localhost:3000
+CORS_ALLOWED_ORIGINS=http://localhost:5173
 
 BOOTSTRAP_ADMIN_USERNAME=admin
 BOOTSTRAP_ADMIN_PASSWORD=your_admin_password
@@ -209,7 +209,7 @@ The first build takes a few minutes. Subsequent starts are fast.
 
 **5. Open the app**
 ```
-http://localhost:3000
+http://localhost:5173
 ```
 
 Login with the admin credentials you set in `.env`.
@@ -221,7 +221,7 @@ Login with the admin credentials you set in `.env`.
 | `DB_USERNAME` | Yes | PostgreSQL username |
 | `DB_PASSWORD` | Yes | PostgreSQL password |
 | `JWT_SECRET` | Yes | HMAC signing key (min 32 characters) |
-| `CORS_ALLOWED_ORIGINS` | Yes | Browser-visible origin (e.g. `http://localhost:3000`) |
+| `CORS_ALLOWED_ORIGINS` | Yes | Browser-visible origin (e.g. `http://localhost:5173`) |
 | `BOOTSTRAP_ADMIN_USERNAME` | Yes | First admin username (only used on first boot) |
 | `BOOTSTRAP_ADMIN_PASSWORD` | Yes | First admin password (only used on first boot) |
 | `JWT_EXPIRATION_MS` | No | Token lifetime in ms (default: 1800000 = 30 minutes) |
@@ -465,7 +465,7 @@ aws ecs update-service --cluster agroconnect-cluster --service agroconnect-servi
 | Using a short `JWT_SECRET` | App fails to start or tokens are easily cracked | Use at least 32 characters; generate with `openssl rand -hex 32` |
 | Keeping example passwords in production | System is trivially compromised | Change every value in `.env` before going live |
 | Setting `CORS_ALLOWED_ORIGINS=*` | Any website can make authenticated API calls on behalf of your users | Always set the exact origin, e.g. `https://yourdomain.com` |
-| Wrong `CORS_ALLOWED_ORIGINS` for the environment | All API calls return 403 | Must match the browser-visible URL exactly, including port (e.g. `http://localhost:3000`) |
+| Wrong `CORS_ALLOWED_ORIGINS` for the environment | All API calls return 403 | Must match the browser-visible URL exactly, including port (e.g. `http://localhost:5173`) |
 
 #### Docker & Build
 
