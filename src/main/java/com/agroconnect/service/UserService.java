@@ -7,6 +7,7 @@ import com.agroconnect.model.User;
 import com.agroconnect.model.enums.Role;
 import com.agroconnect.repository.UserRepository;
 import com.agroconnect.security.LoginAttemptService;
+import com.agroconnect.security.RefreshTokenService;
 import com.agroconnect.security.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,7 @@ public class UserService {
     private final AccessControlService accessControlService;
     private final TokenBlacklistService tokenBlacklistService;
     private final LoginAttemptService loginAttemptService;
+    private final RefreshTokenService refreshTokenService;
 
     /** Roles that are allowed to self-register via the public {@code /api/auth/register} endpoint. */
     private static final Set<Role> SELF_REGISTERABLE_ROLES = Set.of(Role.FARMER, Role.RETAILER);
@@ -130,6 +132,7 @@ public class UserService {
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             tokenBlacklistService.revokeUser(user.getUsername());
+            refreshTokenService.revokeUserSessions(user.getUsername());
         }
 
         return userRepository.save(user);
@@ -145,6 +148,7 @@ public class UserService {
         }
 
         tokenBlacklistService.revokeUser(user.getUsername());
+        refreshTokenService.revokeUserSessions(user.getUsername());
         userRepository.delete(user);
     }
 }

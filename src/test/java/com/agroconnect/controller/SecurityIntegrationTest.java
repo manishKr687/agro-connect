@@ -4,6 +4,7 @@ import com.agroconnect.model.User;
 import com.agroconnect.model.enums.Role;
 import com.agroconnect.repository.BlacklistedTokenRepository;
 import com.agroconnect.repository.LoginAttemptRecordRepository;
+import com.agroconnect.repository.RefreshTokenSessionRepository;
 import com.agroconnect.repository.RevokedUserRepository;
 import com.agroconnect.repository.UserRepository;
 import io.jsonwebtoken.Jwts;
@@ -54,16 +55,23 @@ class SecurityIntegrationTest {
     private LoginAttemptRecordRepository loginAttemptRecordRepository;
 
     @Autowired
+    private RefreshTokenSessionRepository refreshTokenSessionRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Value("${app.jwt.secret}")
     private String jwtSecret;
+
+    @Value("${app.jwt.issuer}")
+    private String jwtIssuer;
 
     @BeforeEach
     void setUp() {
         blacklistedTokenRepository.deleteAll();
         revokedUserRepository.deleteAll();
         loginAttemptRecordRepository.deleteAll();
+        refreshTokenSessionRepository.deleteAll();
         userRepository.deleteAll();
 
         userRepository.save(User.builder()
@@ -82,12 +90,12 @@ class SecurityIntegrationTest {
     @Test
     void unauthorizedRequestShouldFail() throws Exception {
         mockMvc.perform(get("/api/users/me"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     void wrongRoleShouldFail() throws Exception {
-        MockCookie farmerCookie = loginAndExtractAuthCookie("farmer_user", "Password123");
+        MockCookie farmerCookie = loginAndExtractCookies("farmer_user", "Password123").authCookie();
 
         mockMvc.perform(get("/api/admins/1/users").cookie(farmerCookie))
                 .andExpect(status().isForbidden());
@@ -97,13 +105,14 @@ class SecurityIntegrationTest {
     void invalidTokenShouldFail() throws Exception {
         mockMvc.perform(get("/api/users/me")
                         .cookie(new MockCookie("agroconnect_auth", "not-a-valid-jwt")))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     void expiredTokenShouldFail() throws Exception {
         String expiredToken = Jwts.builder()
                 .subject("admin_user")
+                .issuer(jwtIssuer)
                 .issuedAt(Date.from(Instant.now().minusSeconds(3600)))
                 .expiration(Date.from(Instant.now().minusSeconds(60)))
                 .signWith(Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8)))
@@ -111,31 +120,61 @@ class SecurityIntegrationTest {
 
         mockMvc.perform(get("/api/users/me")
                         .cookie(new MockCookie("agroconnect_auth", expiredToken)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     void loginAndLogoutShouldWork() throws Exception {
-        MockCookie authCookie = loginAndExtractAuthCookie("admin_user", "Password123");
+        AuthCookies cookies = loginAndExtractCookies("admin_user", "Password123");
+        MockCookie authCookie = cookies.authCookie();
 
         mockMvc.perform(get("/api/users/me").cookie(authCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("admin_user"))
                 .andExpect(jsonPath("$.role").value("ADMIN"));
 
-        MvcResult logoutResult = mockMvc.perform(post("/api/auth/logout").cookie(authCookie))
+        MvcResult logoutResult = mockMvc.perform(post("/api/auth/logout")
+                        .cookie(cookies.authCookie())
+                        .cookie(cookies.refreshCookie()))
                 .andExpect(status().isNoContent())
                 .andExpect(cookie().maxAge("agroconnect_auth", 0))
+                .andExpect(cookie().maxAge("agroconnect_refresh", 0))
                 .andReturn();
 
-        String clearedCookieHeader = logoutResult.getResponse().getHeader(HttpHeaders.SET_COOKIE);
-        assertThat(clearedCookieHeader).contains("HttpOnly");
+        assertThat(logoutResult.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
+                .allMatch(header -> header.contains("HttpOnly"));
 
         mockMvc.perform(get("/api/users/me").cookie(authCookie))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
-    private MockCookie loginAndExtractAuthCookie(String username, String password) throws Exception {
+    @Test
+    void refreshShouldRotateCookiesAndKeepSessionValid() throws Exception {
+        AuthCookies cookies = loginAndExtractCookies("admin_user", "Password123");
+
+        MvcResult refreshResult = mockMvc.perform(post("/api/auth/refresh")
+                        .cookie(cookies.refreshCookie()))
+                .andExpect(status().isNoContent())
+                .andExpect(cookie().exists("agroconnect_auth"))
+                .andExpect(cookie().exists("agroconnect_refresh"))
+                .andReturn();
+
+        MockCookie refreshedAuthCookie = toMockCookie(refreshResult, "agroconnect_auth");
+        MockCookie refreshedRefreshCookie = toMockCookie(refreshResult, "agroconnect_refresh");
+
+        assertThat(refreshedAuthCookie).isNotNull();
+        assertThat(refreshedRefreshCookie).isNotNull();
+        assertThat(refreshedRefreshCookie.getValue()).isNotEqualTo(cookies.refreshCookie().getValue());
+
+        mockMvc.perform(get("/api/users/me").cookie(refreshedAuthCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("admin_user"));
+
+        mockMvc.perform(post("/api/auth/refresh").cookie(cookies.refreshCookie()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private AuthCookies loginAndExtractCookies(String username, String password) throws Exception {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -146,11 +185,24 @@ class SecurityIntegrationTest {
                                 """.formatted(username, password)))
                 .andExpect(status().isOk())
                 .andExpect(cookie().exists("agroconnect_auth"))
+                .andExpect(cookie().exists("agroconnect_refresh"))
                 .andReturn();
 
-        String setCookie = loginResult.getResponse().getHeader(HttpHeaders.SET_COOKIE);
-        assertThat(setCookie).contains("HttpOnly");
+        assertThat(loginResult.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
+                .allMatch(header -> header.contains("HttpOnly"));
 
-        return new MockCookie("agroconnect_auth", loginResult.getResponse().getCookie("agroconnect_auth").getValue());
+        return new AuthCookies(
+                toMockCookie(loginResult, "agroconnect_auth"),
+                toMockCookie(loginResult, "agroconnect_refresh")
+        );
+    }
+
+    private MockCookie toMockCookie(MvcResult result, String name) {
+        jakarta.servlet.http.Cookie cookie = result.getResponse().getCookie(name);
+        assertThat(cookie).isNotNull();
+        return new MockCookie(name, cookie.getValue());
+    }
+
+    private record AuthCookies(MockCookie authCookie, MockCookie refreshCookie) {
     }
 }
