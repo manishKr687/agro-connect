@@ -114,6 +114,13 @@ CORS_ALLOWED_ORIGINS
 SPRING_PROFILES_ACTIVE=prod
 ```
 
+Production safeguards in this repo:
+- `JWT_SECRET` must be at least 32 characters and cannot use the dev secret.
+- `CORS_ALLOWED_ORIGINS` must use explicit HTTPS origins in the prod profile.
+- `BOOTSTRAP_ADMIN_USERNAME` and `BOOTSTRAP_ADMIN_PASSWORD` must both be set or both be blank.
+- `BOOTSTRAP_ADMIN_PASSWORD` must be at least 16 characters in the prod profile.
+- The actuator server binds to `127.0.0.1:8082` in production.
+
 ### Frontend
 
 ```bash
@@ -190,6 +197,8 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000
 BOOTSTRAP_ADMIN_USERNAME=admin
 BOOTSTRAP_ADMIN_PASSWORD=your_admin_password
 ```
+
+For production, set `CORS_ALLOWED_ORIGINS=https://yourdomain.com` and use a long random admin password.
 
 **4. Build and start**
 ```bash
@@ -271,12 +280,23 @@ In `.env`:
 CORS_ALLOWED_ORIGINS=https://yourdomain.com
 ```
 
-App will be available at `http://your-server-ip:3000`.
+**5. Put HTTPS in front of the app**
+
+Terminate TLS at a reverse proxy or load balancer and forward traffic to the frontend container. Do not serve production traffic over plain HTTP.
+
+**6. Back up PostgreSQL**
+
+At minimum, schedule regular `pg_dump` backups from the database container or your managed PostgreSQL service.
+
+From this repo on Windows PowerShell you can run:
+```powershell
+.\scripts\backup-db.ps1
+```
 
 ### Notes
 
 - Database data is stored in the `postgres_data` Docker volume — it persists across restarts and `docker-compose down`.
-- The bootstrap admin is only created once (on first startup when no admin exists). Changing `BOOTSTRAP_ADMIN_*` after that has no effect.
+- The bootstrap admin is only created once (on first startup when no admin exists). After setup, clear `BOOTSTRAP_ADMIN_USERNAME` and `BOOTSTRAP_ADMIN_PASSWORD`.
 - The backend actuator (health/metrics) runs on internal port `8082` and is not exposed outside the container.
 - All containers have `restart: unless-stopped` — they come back automatically after a server reboot.
 
