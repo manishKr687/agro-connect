@@ -224,7 +224,7 @@ Login with the admin credentials you set in `.env`.
 | `CORS_ALLOWED_ORIGINS` | Yes | Browser-visible origin (e.g. `http://localhost:3000`) |
 | `BOOTSTRAP_ADMIN_USERNAME` | Yes | First admin username (only used on first boot) |
 | `BOOTSTRAP_ADMIN_PASSWORD` | Yes | First admin password (only used on first boot) |
-| `JWT_EXPIRATION_MS` | No | Token lifetime in ms (default: 36000000 = 10 hours) |
+| `JWT_EXPIRATION_MS` | No | Token lifetime in ms (default: 1800000 = 30 minutes) |
 
 ### Common Commands
 

@@ -19,7 +19,7 @@ import java.util.Date;
  * <p>Configuration:
  * <ul>
  *   <li>{@code app.jwt.secret} — signing key (must be at least 32 characters; injected from env/profile)</li>
- *   <li>{@code app.jwt.expiration-ms} — token lifetime in milliseconds (default: 10 hours)</li>
+ *   <li>{@code app.jwt.expiration-ms} — token lifetime in milliseconds (default: 30 minutes)</li>
  * </ul>
  *
  * <p>The signing key is derived from the secret string via {@link Keys#hmacShaKeyFor} in {@link #init()},
@@ -32,8 +32,8 @@ public class JwtUtil {
     @Value("${app.jwt.secret}")
     private String secret;
 
-    /** Token lifetime in milliseconds. Defaults to 36,000,000 ms (10 hours). */
-    @Value("${app.jwt.expiration-ms:36000000}")
+    /** Token lifetime in milliseconds. Defaults to 1,800,000 ms (30 minutes). */
+    @Value("${app.jwt.expiration-ms:1800000}")
     private long expirationMs;
 
     private SecretKey signingKey;
