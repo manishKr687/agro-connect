@@ -1,74 +1,118 @@
 package com.agroconnect.security;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.lang.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Rate-limits requests to {@code /api/auth/**} using a per-IP token bucket (Bucket4j).
+ * Rate-limits requests to {@code /api/auth/**} using per-IP token buckets (Bucket4j).
  *
- * <p>Each client IP gets its own bucket. Once the bucket is empty, the filter returns
- * {@code 429 Too Many Requests} until the bucket refills at the start of the next minute.
+ * <p>Additionally, for {@code POST /api/auth/login}, a separate per-username bucket
+ * is checked so that distributed brute-force attacks (many IPs, one target username)
+ * are also blocked.
  *
  * <p>Configuration:
  * <ul>
- *   <li>{@code app.rate-limit.auth.requests-per-minute} — bucket capacity and refill rate
- *       (default: 10; dev override: 100)</li>
+ *   <li>{@code app.rate-limit.auth.requests-per-minute} — per-IP bucket (default: 10)</li>
+ *   <li>{@code app.rate-limit.auth.username-requests-per-minute} — per-username bucket (default: 5)</li>
  * </ul>
- *
- * <p>The client IP is resolved from the {@code X-Forwarded-For} header when present
- * (for deployments behind a reverse proxy), falling back to the remote address.
- * This filter is registered before the JWT filter in {@link SecurityConfig}.
  */
 @Component
+@RequiredArgsConstructor
 public class AuthRateLimitingFilter extends OncePerRequestFilter {
 
-    /** Bucket capacity and refill rate per IP per minute. */
     @Value("${app.rate-limit.auth.requests-per-minute:10}")
-    private int requestsPerMinute;
+    private int ipRequestsPerMinute;
 
-    /** One bucket per client IP. ConcurrentHashMap ensures thread-safe lazy initialisation. */
-    private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
+    @Value("${app.rate-limit.auth.username-requests-per-minute:5}")
+    private int usernameRequestsPerMinute;
 
-    /** Only applies to auth endpoints — all other paths are skipped. */
+    private final ObjectMapper objectMapper;
+
+    private final ConcurrentHashMap<String, Bucket> ipBuckets = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Bucket> usernameBuckets = new ConcurrentHashMap<>();
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return !request.getRequestURI().startsWith("/api/auth/");
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain)
             throws ServletException, IOException {
-        String ip = getClientIp(request);
-        Bucket bucket = buckets.computeIfAbsent(ip, this::newBucket);
 
-        if (bucket.tryConsume(1)) {
-            filterChain.doFilter(request, response);
-        } else {
-            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Too many requests. Please try again later.\"}");
+        // Always check per-IP bucket
+        String ip = getClientIp(request);
+        if (!ipBuckets.computeIfAbsent(ip, k -> newBucket(ipRequestsPerMinute)).tryConsume(1)) {
+            rejectTooManyRequests(response);
+            return;
+        }
+
+        // For login only: also check per-username bucket
+        if (request.getRequestURI().endsWith("/login") && "POST".equalsIgnoreCase(request.getMethod())) {
+            ContentCachingRequestWrapper wrapped = new ContentCachingRequestWrapper(request);
+            String username = extractUsername(wrapped);
+
+            if (username != null && !username.isBlank()) {
+                if (!usernameBuckets.computeIfAbsent(username, k -> newBucket(usernameRequestsPerMinute)).tryConsume(1)) {
+                    rejectTooManyRequests(response);
+                    return;
+                }
+            }
+
+            filterChain.doFilter(wrapped, response);
+            return;
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    private String extractUsername(ContentCachingRequestWrapper request) {
+        try {
+            byte[] body = request.getContentAsByteArray();
+            if (body.length == 0) {
+                // Body not yet read — read it now
+                body = request.getInputStream().readAllBytes();
+            }
+            JsonNode node = objectMapper.readTree(body);
+            JsonNode usernameNode = node.get("username");
+            return usernameNode != null ? usernameNode.asText() : null;
+        } catch (Exception e) {
+            return null;
         }
     }
 
-    private Bucket newBucket(String ip) {
+    private Bucket newBucket(int requestsPerMinute) {
         return Bucket.builder()
                 .addLimit(Bandwidth.builder()
                         .capacity(requestsPerMinute)
                         .refillGreedy(requestsPerMinute, Duration.ofMinutes(1))
                         .build())
                 .build();
+    }
+
+    private void rejectTooManyRequests(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+        response.setContentType("application/json");
+        response.getWriter().write("{\"error\": \"Too many requests. Please try again later.\"}");
     }
 
     private String getClientIp(HttpServletRequest request) {

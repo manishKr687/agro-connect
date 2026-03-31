@@ -3,6 +3,7 @@ package com.agroconnect.controller;
 import com.agroconnect.dto.CropDemandSummary;
 import com.agroconnect.repository.DemandRepository;
 import com.agroconnect.service.DemandEventService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,17 +35,25 @@ public class PublicDashboardController {
     }
 
     /**
-     * SSE stream endpoint. Clients receive a {@code demands} event whenever the
-     * aggregated open demand changes (on create or delete). The initial snapshot is
-     * sent as the first event so clients don't need to call {@code /demands} first.
+     * SSE stream endpoint. Rate-limited by {@link com.agroconnect.security.SseRateLimitingFilter}
+     * (connection rate) and by {@link DemandEventService} (concurrent connections per IP).
      */
     @GetMapping(value = "/demands/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamDemands() {
-        SseEmitter emitter = demandEventService.subscribe();
+    public SseEmitter streamDemands(HttpServletRequest request) {
+        String clientIp = getClientIp(request);
+        SseEmitter emitter = demandEventService.subscribe(clientIp);
 
         List<CropDemandSummary> snapshot = demandRepository.findOpenDemandSummaries();
         demandEventService.broadcastTo(emitter, snapshot);
 
         return emitter;
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

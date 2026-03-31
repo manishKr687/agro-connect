@@ -6,6 +6,7 @@ import com.agroconnect.dto.UpdateUserRequest;
 import com.agroconnect.model.User;
 import com.agroconnect.model.enums.Role;
 import com.agroconnect.repository.UserRepository;
+import com.agroconnect.security.LoginAttemptService;
 import com.agroconnect.security.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AccessControlService accessControlService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final LoginAttemptService loginAttemptService;
 
     /** Roles that are allowed to self-register via the public {@code /api/auth/register} endpoint. */
     private static final Set<Role> SELF_REGISTERABLE_ROLES = Set.of(Role.FARMER, Role.RETAILER);
@@ -87,13 +89,22 @@ public class UserService {
      * @throws org.springframework.web.server.ResponseStatusException 401 if the username doesn't exist or the password is wrong
      */
     public User login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+        String username = request.getUsername();
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (loginAttemptService.isLocked(username)) {
+            long seconds = loginAttemptService.secondsUntilUnlock(username);
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Account temporarily locked. Try again in " + seconds + " seconds.");
+        }
+
+        User user = userRepository.findByUsername(username).orElse(null);
+
+        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            loginAttemptService.recordFailure(username);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
+        loginAttemptService.recordSuccess(username);
         return user;
     }
 
