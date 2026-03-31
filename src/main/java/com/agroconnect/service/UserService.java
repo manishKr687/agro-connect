@@ -6,6 +6,7 @@ import com.agroconnect.dto.UpdateUserRequest;
 import com.agroconnect.model.User;
 import com.agroconnect.model.enums.Role;
 import com.agroconnect.repository.UserRepository;
+import com.agroconnect.security.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +29,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AccessControlService accessControlService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     /** Roles that are allowed to self-register via the public {@code /api/auth/register} endpoint. */
     private static final Set<Role> SELF_REGISTERABLE_ROLES = Set.of(Role.FARMER, Role.RETAILER);
@@ -130,6 +132,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin cannot delete their own account");
         }
 
+        tokenBlacklistService.revokeUser(user.getUsername());
         userRepository.delete(user);
     }
 }

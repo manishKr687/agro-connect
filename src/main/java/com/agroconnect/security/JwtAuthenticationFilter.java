@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
 
 /**
  * Servlet filter that authenticates requests by validating the JWT in the
@@ -26,13 +27,10 @@ import java.io.IOException;
  * <p>On protected requests the filter:
  * <ol>
  *   <li>Reads the {@code Authorization: Bearer <token>} header</li>
- *   <li>Extracts the username from the token</li>
+ *   <li>Rejects tokens that are blacklisted (logged out) or issued before user revocation</li>
  *   <li>Loads the user and validates token signature + expiry</li>
  *   <li>If valid, sets authentication in the {@link SecurityContextHolder}</li>
  * </ol>
- *
- * <p>Requests without a token (or with an invalid one) pass through unauthenticated —
- * Spring Security's access rules in {@link SecurityConfig} decide whether to allow or reject.
  */
 @Component
 @RequiredArgsConstructor
@@ -40,6 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     /** Skip this filter for public endpoints — avoids stale-token interference on login. */
     @Override
@@ -63,10 +62,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
         String username;
+        Instant issuedAt;
 
         try {
             username = jwtUtil.extractUsername(token);
+            issuedAt = jwtUtil.extractIssuedAt(token);
         } catch (Exception ex) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Reject blacklisted tokens (explicit logout)
+        if (tokenBlacklistService.isTokenBlacklisted(token)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Reject tokens issued before user was revoked (user deletion)
+        if (tokenBlacklistService.isUserRevoked(username, issuedAt)) {
             filterChain.doFilter(request, response);
             return;
         }
