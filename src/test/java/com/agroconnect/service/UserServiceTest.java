@@ -2,10 +2,12 @@ package com.agroconnect.service;
 
 import com.agroconnect.dto.LoginRequest;
 import com.agroconnect.dto.RegisterUserRequest;
+import com.agroconnect.dto.ChangePasswordRequest;
 import com.agroconnect.model.User;
 import com.agroconnect.model.enums.Role;
 import com.agroconnect.repository.UserRepository;
 import com.agroconnect.security.LoginAttemptService;
+import com.agroconnect.security.RefreshTokenService;
 import com.agroconnect.security.TokenBlacklistService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,7 @@ class UserServiceTest {
     @Mock AccessControlService accessControlService;
     @Mock TokenBlacklistService tokenBlacklistService;
     @Mock LoginAttemptService loginAttemptService;
+    @Mock RefreshTokenService refreshTokenService;
 
     @InjectMocks UserService userService;
 
@@ -154,5 +157,29 @@ class UserServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void changePassword_validCurrentPassword_updatesPasswordAndRevokesSessions() {
+        User user = User.builder()
+                .id(1L)
+                .username("farmer1")
+                .password("old-hash")
+                .role(Role.FARMER)
+                .build();
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setCurrentPassword("old-password");
+        request.setNewPassword("new-password-123");
+
+        when(passwordEncoder.matches("old-password", "old-hash")).thenReturn(true);
+        when(passwordEncoder.matches("new-password-123", "old-hash")).thenReturn(false);
+        when(passwordEncoder.encode("new-password-123")).thenReturn("new-hash");
+
+        userService.changePassword(user, request);
+
+        assertThat(user.getPassword()).isEqualTo("new-hash");
+        verify(userRepository).save(user);
+        verify(tokenBlacklistService).revokeUser("farmer1");
+        verify(refreshTokenService).revokeUserSessions("farmer1");
     }
 }

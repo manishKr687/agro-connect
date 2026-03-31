@@ -174,6 +174,33 @@ class SecurityIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void changePasswordShouldClearCookiesAndRequireNewLogin() throws Exception {
+        AuthCookies cookies = loginAndExtractCookies("admin_user", "Password123");
+
+        mockMvc.perform(post("/api/users/me/change-password")
+                        .cookie(cookies.authCookie())
+                        .cookie(cookies.refreshCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "currentPassword": "Password123",
+                                  "newPassword": "NewPassword123"
+                                }
+                                """))
+                .andExpect(status().isNoContent())
+                .andExpect(cookie().maxAge("agroconnect_auth", 0))
+                .andExpect(cookie().maxAge("agroconnect_refresh", 0));
+
+        mockMvc.perform(get("/api/users/me").cookie(cookies.authCookie()))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/auth/refresh").cookie(cookies.refreshCookie()))
+                .andExpect(status().isUnauthorized());
+
+        loginAndExtractCookies("admin_user", "NewPassword123");
+    }
+
     private AuthCookies loginAndExtractCookies(String username, String password) throws Exception {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

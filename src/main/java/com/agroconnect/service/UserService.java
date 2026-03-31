@@ -3,6 +3,7 @@ package com.agroconnect.service;
 import com.agroconnect.dto.LoginRequest;
 import com.agroconnect.dto.RegisterUserRequest;
 import com.agroconnect.dto.UpdateUserRequest;
+import com.agroconnect.dto.ChangePasswordRequest;
 import com.agroconnect.model.User;
 import com.agroconnect.model.enums.Role;
 import com.agroconnect.repository.UserRepository;
@@ -150,5 +151,20 @@ public class UserService {
         tokenBlacklistService.revokeUser(user.getUsername());
         refreshTokenService.revokeUserSessions(user.getUsername());
         userRepository.delete(user);
+    }
+
+    public void changePassword(User currentUser, ChangePasswordRequest request) {
+        if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Current password is incorrect");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), currentUser.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New password must be different from the current password");
+        }
+
+        currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(currentUser);
+        tokenBlacklistService.revokeUser(currentUser.getUsername());
+        refreshTokenService.revokeUserSessions(currentUser.getUsername());
     }
 }

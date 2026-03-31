@@ -1,5 +1,6 @@
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\LoginRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\CropNormalizerClient.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\ChangePasswordRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\JwtUtil.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\AdminDeliveryTaskController.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\LoginAttemptRecordRepository.java

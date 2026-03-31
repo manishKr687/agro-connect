@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -58,10 +59,12 @@ public class RefreshTokenService {
                 });
     }
 
+    @Transactional
     public void revokeUserSessions(String username) {
         refreshTokenSessionRepository.deleteByUserUsername(username);
     }
 
+    @Transactional
     @Scheduled(fixedDelay = 3_600_000)
     public void purgeExpired() {
         refreshTokenSessionRepository.deleteByExpiresAtBefore(Instant.now());
