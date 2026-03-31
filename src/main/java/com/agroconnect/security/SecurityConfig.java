@@ -25,24 +25,28 @@ import java.util.List;
  * <ul>
  *   <li><b>Stateless sessions</b> — no server-side session; every request must carry a valid JWT.</li>
  *   <li><b>CSRF disabled</b> — safe because the API is stateless and not accessed via browser forms.</li>
- *   <li><b>Public endpoints</b> — only {@code /api/auth/**} (register, login) are permit-all;
+ *   <li><b>Public endpoints</b> — {@code /api/auth/**} and {@code /api/public/**} are permit-all;
  *       every other path requires authentication.</li>
  *   <li><b>Filter order</b> — {@link AuthRateLimitingFilter} runs before {@link JwtAuthenticationFilter}
  *       so rate-limited requests are rejected before any DB lookup occurs.</li>
- *   <li><b>CORS origins</b> — configured via {@code app.cors.allowed-origins} (comma-separated list),
+ *   <li><b>JWT filter skip</b> — {@link JwtAuthenticationFilter} skips public paths entirely,
+ *       so a stale token in localStorage never interferes with login.</li>
+ *   <li><b>CORS origins</b> — configured via {@code app.cors.allowed-origins} (comma-separated),
  *       set per-profile (e.g. {@code http://localhost:3000} in dev).</li>
  * </ul>
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AuthRateLimitingFilter authRateLimitingFilter;
 
     @Value("${app.cors.allowed-origins}")
     private List<String> allowedOrigins;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, AuthRateLimitingFilter authRateLimitingFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          AuthRateLimitingFilter authRateLimitingFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.authRateLimitingFilter = authRateLimitingFilter;
     }
@@ -51,12 +55,12 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests((auth) -> auth
+            .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .anyRequest().authenticated()
             )
-            .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .csrf(csrf -> csrf.disable())
             .addFilterBefore(authRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

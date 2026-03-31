@@ -16,6 +16,7 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\DemandService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\AuthResponse.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\UpdateDeliveryTaskRequest.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\CropDemandSummary.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\HarvestService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\Harvest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\DemandRequest.java
@@ -23,7 +24,6 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\PublicDashboardController.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\enums\Role.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\RejectDeliveryTaskRequest.java
-C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\PublicDemandResponse.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\AccessControlService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\JwtAuthenticationFilter.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\CreateDeliveryTaskRequest.java
@@ -46,6 +46,7 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\cont
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\controller\CropController.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\DemandChangeRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\config\AppConfig.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\DemandEventService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\config\AdminBootstrapRunner.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\model\User.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\service\MatchingService.java

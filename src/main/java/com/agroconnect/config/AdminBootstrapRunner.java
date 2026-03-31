@@ -3,6 +3,7 @@ package com.agroconnect.config;
 import com.agroconnect.model.User;
 import com.agroconnect.model.enums.Role;
 import com.agroconnect.repository.UserRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,26 +14,27 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
- * Creates the first admin account on application startup if none exists.
+ * Ensures a bootstrap admin account exists on application startup.
  *
- * <p>This solves the chicken-and-egg problem: without an admin, there is no way to
- * create one through the API (which requires an existing admin). On first boot, this
- * runner checks whether any admin exists; if not, it creates one from the configured
- * bootstrap credentials.
- *
- * <p>Configuration (set per-profile):
+ * <p>Behaviour:
  * <ul>
- *   <li>{@code app.bootstrap.admin.username} — desired username for the first admin</li>
- *   <li>{@code app.bootstrap.admin.password} — desired password (will be BCrypt-hashed)</li>
+ *   <li><b>No admin with the bootstrap username</b> — creates the account.</li>
+ *   <li><b>Admin exists + {@code app.bootstrap.admin.reset-password=true}</b> — updates the
+ *       password if it differs. Only enable this in dev/staging; never in production.</li>
+ *   <li><b>Admin exists + reset disabled (default)</b> — no-op, existing password preserved.</li>
  * </ul>
  *
- * <p>If the credentials are not configured and no admin exists, a warning is logged and
- * the application starts without an admin account. This runner is a no-op on all subsequent
- * startups once an admin exists.
+ * <p>Configuration:
+ * <ul>
+ *   <li>{@code app.bootstrap.admin.username}</li>
+ *   <li>{@code app.bootstrap.admin.password}</li>
+ *   <li>{@code app.bootstrap.admin.reset-password} — default {@code false}</li>
+ * </ul>
  */
 @Component
 @RequiredArgsConstructor
 public class AdminBootstrapRunner implements ApplicationRunner {
+
     private static final Logger log = LoggerFactory.getLogger(AdminBootstrapRunner.class);
 
     private final UserRepository userRepository;
@@ -44,25 +46,34 @@ public class AdminBootstrapRunner implements ApplicationRunner {
     @Value("${app.bootstrap.admin.password:}")
     private String bootstrapPassword;
 
+    /** Only true in dev — allows password sync on restart. Never set in prod. */
+    @Value("${app.bootstrap.admin.reset-password:false}")
+    private boolean resetPassword;
+
     @Override
     public void run(ApplicationArguments args) {
-        if (userRepository.existsByRole(Role.ADMIN)) {
-            return;
-        }
-
         if (bootstrapUsername.isBlank() || bootstrapPassword.isBlank()) {
-            log.warn("No admin exists and BOOTSTRAP_ADMIN_USERNAME/BOOTSTRAP_ADMIN_PASSWORD are not set. " +
-                     "Set these env vars to create the first admin on startup.");
+            log.warn("BOOTSTRAP_ADMIN_USERNAME / BOOTSTRAP_ADMIN_PASSWORD not set — skipping admin bootstrap.");
             return;
         }
 
-        User admin = User.builder()
-                .username(bootstrapUsername)
-                .password(passwordEncoder.encode(bootstrapPassword))
-                .role(Role.ADMIN)
-                .build();
-
-        userRepository.save(admin);
-        log.info("Bootstrap admin '{}' created successfully.", bootstrapUsername);
+        userRepository.findByUsername(bootstrapUsername).ifPresentOrElse(
+            (@NonNull User existing) -> {
+                if (resetPassword && !passwordEncoder.matches(bootstrapPassword, existing.getPassword())) {
+                    existing.setPassword(passwordEncoder.encode(bootstrapPassword));
+                    userRepository.save(existing);
+                    log.info("Bootstrap admin '{}' password reset from config.", bootstrapUsername);
+                }
+            },
+            () -> {
+                User admin = User.builder()
+                        .username(bootstrapUsername)
+                        .password(passwordEncoder.encode(bootstrapPassword))
+                        .role(Role.ADMIN)
+                        .build();
+                userRepository.save(admin);
+                log.info("Bootstrap admin '{}' created successfully.", bootstrapUsername);
+            }
+        );
     }
 }
