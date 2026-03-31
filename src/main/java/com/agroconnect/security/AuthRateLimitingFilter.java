@@ -9,12 +9,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.lang.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -29,8 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>Configuration:
  * <ul>
- *   <li>{@code app.rate-limit.auth.requests-per-minute} — per-IP bucket (default: 10)</li>
- *   <li>{@code app.rate-limit.auth.username-requests-per-minute} — per-username bucket (default: 5)</li>
+ *   <li>{@code app.rate-limit.auth.requests-per-minute} - per-IP bucket (default: 10)</li>
+ *   <li>{@code app.rate-limit.auth.username-requests-per-minute} - per-username bucket (default: 5)</li>
  * </ul>
  */
 @Component
@@ -59,23 +58,20 @@ public class AuthRateLimitingFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Always check per-IP bucket
         String ip = getClientIp(request);
         if (!ipBuckets.computeIfAbsent(ip, k -> newBucket(ipRequestsPerMinute)).tryConsume(1)) {
             rejectTooManyRequests(response);
             return;
         }
 
-        // For login only: also check per-username bucket
         if (request.getRequestURI().endsWith("/login") && "POST".equalsIgnoreCase(request.getMethod())) {
-            ContentCachingRequestWrapper wrapped = new ContentCachingRequestWrapper(request);
+            CachedBodyHttpServletRequest wrapped = new CachedBodyHttpServletRequest(request);
             String username = extractUsername(wrapped);
 
-            if (username != null && !username.isBlank()) {
-                if (!usernameBuckets.computeIfAbsent(username, k -> newBucket(usernameRequestsPerMinute)).tryConsume(1)) {
-                    rejectTooManyRequests(response);
-                    return;
-                }
+            if (username != null && !username.isBlank()
+                    && !usernameBuckets.computeIfAbsent(username, k -> newBucket(usernameRequestsPerMinute)).tryConsume(1)) {
+                rejectTooManyRequests(response);
+                return;
             }
 
             filterChain.doFilter(wrapped, response);
@@ -85,14 +81,9 @@ public class AuthRateLimitingFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String extractUsername(ContentCachingRequestWrapper request) {
+    private String extractUsername(CachedBodyHttpServletRequest request) {
         try {
-            byte[] body = request.getContentAsByteArray();
-            if (body.length == 0) {
-                // Body not yet read — read it now
-                body = request.getInputStream().readAllBytes();
-            }
-            JsonNode node = objectMapper.readTree(body);
+            JsonNode node = objectMapper.readTree(request.getCachedBody());
             JsonNode usernameNode = node.get("username");
             return usernameNode != null ? usernameNode.asText() : null;
         } catch (Exception e) {
