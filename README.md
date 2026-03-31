@@ -278,13 +278,37 @@ docker-compose up -d --build
 In `.env`:
 ```env
 CORS_ALLOWED_ORIGINS=https://yourdomain.com
+SERVER_NAME=yourdomain.com
 ```
 
-**5. Put HTTPS in front of the app**
+**5. Add TLS certificates for the edge proxy**
 
-Terminate TLS at a reverse proxy or load balancer and forward traffic to the frontend container. Do not serve production traffic over plain HTTP.
+Place your certificate and private key here on the server:
+```text
+deploy/certs/fullchain.pem
+deploy/certs/privkey.pem
+```
 
-**6. Back up PostgreSQL**
+The included production overlay expects those exact filenames. You can use Let's Encrypt, your cloud certificate export, or any other PEM-formatted certificate pair.
+
+**6. Start the HTTPS stack**
+
+Use the base compose file plus the production overlay:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+This production overlay:
+- keeps the frontend container internal
+- exposes only ports `80` and `443` on the edge Nginx container
+- redirects all HTTP traffic to HTTPS
+- forwards HTTPS traffic to the frontend container, which proxies `/api/*` to the backend
+
+**7. Put HTTPS in front of the app**
+
+If you are not using the included edge Nginx service, terminate TLS at your reverse proxy or load balancer and forward only HTTPS traffic to the frontend container. Do not serve production traffic over plain HTTP.
+
+**8. Back up PostgreSQL**
 
 At minimum, schedule regular `pg_dump` backups from the database container or your managed PostgreSQL service.
 
