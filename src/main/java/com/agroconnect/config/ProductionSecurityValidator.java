@@ -25,6 +25,9 @@ public class ProductionSecurityValidator {
     @Value("${app.cors.allowed-origins}")
     private List<String> allowedOrigins;
 
+    @Value("${app.jwt.issuer:}")
+    private String jwtIssuer;
+
     @Value("${app.bootstrap.admin.username:}")
     private String bootstrapAdminUsername;
 
@@ -34,6 +37,7 @@ public class ProductionSecurityValidator {
     @PostConstruct
     public void validate() {
         validateJwtSecret();
+        validateJwtIssuer();
         validateCorsOrigins();
         validateBootstrapAdmin();
     }
@@ -45,6 +49,12 @@ public class ProductionSecurityValidator {
 
         if (DEV_SECRET.equals(jwtSecret)) {
             throw new IllegalStateException("JWT_SECRET must not use the development secret in production.");
+        }
+    }
+
+    private void validateJwtIssuer() {
+        if (jwtIssuer == null || jwtIssuer.isBlank()) {
+            throw new IllegalStateException("JWT_ISSUER must be set in production.");
         }
     }
 

@@ -36,6 +36,10 @@ public class JwtUtil {
     @Value("${app.jwt.expiration-ms:1800000}")
     private long expirationMs;
 
+    /** Expected issuer claim for AgroConnect tokens. */
+    @Value("${app.jwt.issuer:agroconnect}")
+    private String issuer;
+
     private SecretKey signingKey;
 
     /** Derives the HMAC signing key from the configured secret string after Spring injection. */
@@ -56,6 +60,7 @@ public class JwtUtil {
 
         return Jwts.builder()
                 .subject(userDetails.getUsername())
+                .issuer(issuer)
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(signingKey)
@@ -85,6 +90,7 @@ public class JwtUtil {
     private Claims extractClaims(String token) {
         return Jwts.parser()
                 .verifyWith(signingKey)
+                .requireIssuer(issuer)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
