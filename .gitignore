@@ -36,5 +36,4 @@ Thumbs.db
 AgroConnect.postman_collection.json
 
 # Exclude sensitive files
-application-prod.properties
 application-dev.properties
