@@ -26,6 +26,6 @@ COPY --from=build /app/target/agroconnect-backend-0.0.1-SNAPSHOT.jar app.jar
 RUN chown agroconnect:agroconnect app.jar
 USER agroconnect
 
-EXPOSE 8081
+EXPOSE ${PORT:-8081}
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
