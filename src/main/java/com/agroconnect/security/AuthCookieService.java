@@ -42,7 +42,7 @@ public class AuthCookieService {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(secure)
-                .sameSite("Lax")
+                .sameSite("None")
                 .path("/")
                 .maxAge(maxAgeSeconds)
                 .build()
