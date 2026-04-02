@@ -84,8 +84,8 @@ public class AuthRateLimitingFilter extends OncePerRequestFilter {
     private String extractUsername(CachedBodyHttpServletRequest request) {
         try {
             JsonNode node = objectMapper.readTree(request.getCachedBody());
-            JsonNode usernameNode = node.get("username");
-            return usernameNode != null ? usernameNode.asText() : null;
+            JsonNode phoneNode = node.get("phoneNumber");
+            return phoneNode != null ? phoneNode.asText() : null;
         } catch (Exception e) {
             return null;
         }

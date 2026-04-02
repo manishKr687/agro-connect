@@ -113,7 +113,7 @@ public class AuthController {
                 .headers(headers)
                 .body(AuthResponse.builder()
                         .userId(user.getId())
-                        .username(user.getUsername())
+                        .name(user.getName())
                         .role(user.getRole())
                         .build());
     }

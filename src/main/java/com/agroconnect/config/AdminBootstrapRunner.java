@@ -40,8 +40,11 @@ public class AdminBootstrapRunner implements ApplicationRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.bootstrap.admin.username:}")
-    private String bootstrapUsername;
+    @Value("${app.bootstrap.admin.name:Admin}")
+    private String bootstrapName;
+
+    @Value("${app.bootstrap.admin.phone-number:}")
+    private String bootstrapPhoneNumber;
 
     @Value("${app.bootstrap.admin.password:}")
     private String bootstrapPassword;
@@ -52,27 +55,28 @@ public class AdminBootstrapRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (bootstrapUsername.isBlank() || bootstrapPassword.isBlank()) {
-            log.warn("BOOTSTRAP_ADMIN_USERNAME / BOOTSTRAP_ADMIN_PASSWORD not set — skipping admin bootstrap.");
+        if (bootstrapPhoneNumber.isBlank() || bootstrapPassword.isBlank()) {
+            log.warn("BOOTSTRAP_ADMIN_PHONE_NUMBER / BOOTSTRAP_ADMIN_PASSWORD not set — skipping admin bootstrap.");
             return;
         }
 
-        userRepository.findByUsername(bootstrapUsername).ifPresentOrElse(
+        userRepository.findByPhoneNumber(bootstrapPhoneNumber).ifPresentOrElse(
             (@NonNull User existing) -> {
                 if (resetPassword && !passwordEncoder.matches(bootstrapPassword, existing.getPassword())) {
                     existing.setPassword(passwordEncoder.encode(bootstrapPassword));
                     userRepository.save(existing);
-                    log.info("Bootstrap admin '{}' password reset from config.", bootstrapUsername);
+                    log.info("Bootstrap admin '{}' password reset from config.", bootstrapPhoneNumber);
                 }
             },
             () -> {
                 User admin = User.builder()
-                        .username(bootstrapUsername)
+                        .name(bootstrapName)
+                        .phoneNumber(bootstrapPhoneNumber)
                         .password(passwordEncoder.encode(bootstrapPassword))
                         .role(Role.ADMIN)
                         .build();
                 userRepository.save(admin);
-                log.info("Bootstrap admin '{}' created successfully.", bootstrapUsername);
+                log.info("Bootstrap admin '{}' created successfully.", bootstrapPhoneNumber);
             }
         );
     }

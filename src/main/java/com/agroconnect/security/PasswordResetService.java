@@ -119,8 +119,8 @@ public class PasswordResetService {
         userRepository.save(user);
         challenge.setUsedAt(Instant.now());
         passwordResetChallengeRepository.save(challenge);
-        tokenBlacklistService.revokeUser(user.getUsername());
-        refreshTokenService.revokeUserSessions(user.getUsername());
+        tokenBlacklistService.revokeUser(user.getPhoneNumber());
+        refreshTokenService.revokeUserSessions(user.getPhoneNumber());
     }
 
     @Scheduled(fixedDelay = 3_600_000)
