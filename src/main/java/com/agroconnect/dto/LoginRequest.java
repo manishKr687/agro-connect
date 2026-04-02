@@ -7,8 +7,11 @@ import lombok.Data;
 @Data
 public class LoginRequest {
     @NotBlank
-    @Size(max = 50)
-    private String username;
+    @Pattern(
+            regexp = "^\\+?[0-9]{10,15}$",
+            message = "Phone number must contain 10 to 15 digits and may start with +"
+    )
+    private String phoneNumber;
 
     @NotBlank
     @Size(max = 100)

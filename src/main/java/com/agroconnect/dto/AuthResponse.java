@@ -8,6 +8,6 @@ import lombok.Data;
 @Builder
 public class AuthResponse {
     private Long userId;
-    private String username;
+    private String name;
     private Role role;
 }

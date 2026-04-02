@@ -11,9 +11,8 @@ import lombok.Data;
 @Data
 public class RegisterUserRequest {
     @NotBlank
-    @Size(min = 3, max = 50)
-    @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username may only contain letters, digits and underscores")
-    private String username;
+    @Size(min = 2, max = 100)
+    private String name;
 
     @NotBlank
     @Size(min = 8, max = 100)
@@ -23,8 +22,9 @@ public class RegisterUserRequest {
     @Size(max = 100)
     private String email;
 
+    @NotBlank
     @Pattern(
-            regexp = "^$|^\\+?[0-9]{10,15}$",
+            regexp = "^\\+?[0-9]{10,15}$",
             message = "Phone number must contain 10 to 15 digits and may start with +"
     )
     private String phoneNumber;
