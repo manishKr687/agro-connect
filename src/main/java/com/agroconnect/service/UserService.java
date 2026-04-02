@@ -2,6 +2,7 @@ package com.agroconnect.service;
 
 import com.agroconnect.dto.LoginRequest;
 import com.agroconnect.dto.RegisterUserRequest;
+import com.agroconnect.dto.UpdateProfileRequest;
 import com.agroconnect.dto.UpdateUserRequest;
 import com.agroconnect.dto.ChangePasswordRequest;
 import com.agroconnect.model.User;
@@ -19,7 +20,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Handles user registration, authentication, and admin-level user management.
@@ -54,11 +54,10 @@ public class UserService {
 
         String normalizedEmail = normalizeEmail(request.getEmail());
         String normalizedPhoneNumber = normalizePhoneNumber(request.getPhoneNumber());
-        validateRecoveryContacts(normalizedEmail, normalizedPhoneNumber);
-        assertUniqueIdentity(request.getUsername(), normalizedEmail, normalizedPhoneNumber, null);
+        assertUniqueContacts(normalizedEmail, normalizedPhoneNumber, null);
 
         User user = User.builder()
-                .username(request.getUsername())
+                .name(request.getName().trim())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(normalizedEmail)
                 .phoneNumber(normalizedPhoneNumber)
@@ -78,11 +77,10 @@ public class UserService {
         accessControlService.requireAdmin(adminId);
         String normalizedEmail = normalizeEmail(request.getEmail());
         String normalizedPhoneNumber = normalizePhoneNumber(request.getPhoneNumber());
-        validateRecoveryContacts(normalizedEmail, normalizedPhoneNumber);
-        assertUniqueIdentity(request.getUsername(), normalizedEmail, normalizedPhoneNumber, null);
+        assertUniqueContacts(normalizedEmail, normalizedPhoneNumber, null);
 
         User user = User.builder()
-                .username(request.getUsername())
+                .name(request.getName().trim())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(normalizedEmail)
                 .phoneNumber(normalizedPhoneNumber)
@@ -99,22 +97,22 @@ public class UserService {
      * @throws org.springframework.web.server.ResponseStatusException 401 if the username doesn't exist or the password is wrong
      */
     public User login(LoginRequest request) {
-        String username = request.getUsername();
+        String phoneNumber = normalizePhoneNumber(request.getPhoneNumber());
 
-        if (loginAttemptService.isLocked(username)) {
-            long seconds = loginAttemptService.secondsUntilUnlock(username);
+        if (loginAttemptService.isLocked(phoneNumber)) {
+            long seconds = loginAttemptService.secondsUntilUnlock(phoneNumber);
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                     "Account temporarily locked. Try again in " + seconds + " seconds.");
         }
 
-        User user = userRepository.findByUsername(username).orElse(null);
+        User user = userRepository.findByPhoneNumber(phoneNumber).orElse(null);
 
         if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            loginAttemptService.recordFailure(username);
+            loginAttemptService.recordFailure(phoneNumber);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
-        loginAttemptService.recordSuccess(username);
+        loginAttemptService.recordSuccess(phoneNumber);
         return user;
     }
 
@@ -129,21 +127,36 @@ public class UserService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         String normalizedEmail = normalizeEmail(request.getEmail());
         String normalizedPhoneNumber = normalizePhoneNumber(request.getPhoneNumber());
-        validateRecoveryContacts(normalizedEmail, normalizedPhoneNumber);
-        assertUniqueIdentity(request.getUsername(), normalizedEmail, normalizedPhoneNumber, userId);
+        assertUniqueContacts(normalizedEmail, normalizedPhoneNumber, userId);
 
-        user.setUsername(request.getUsername().trim());
+        user.setName(request.getName().trim());
         user.setEmail(normalizedEmail);
         user.setPhoneNumber(normalizedPhoneNumber);
         user.setRole(request.getRole());
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
-            tokenBlacklistService.revokeUser(user.getUsername());
-            refreshTokenService.revokeUserSessions(user.getUsername());
+            tokenBlacklistService.revokeUser(user.getPhoneNumber());
+            refreshTokenService.revokeUserSessions(user.getPhoneNumber());
         }
 
         return userRepository.save(user);
+    }
+
+    public User updateProfile(User currentUser, UpdateProfileRequest request) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
+
+        if (normalizedEmail != null) {
+            userRepository.findByEmail(normalizedEmail).ifPresent(existing -> {
+                if (!existing.getId().equals(currentUser.getId())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+                }
+            });
+        }
+
+        currentUser.setName(request.getName().trim());
+        currentUser.setEmail(normalizedEmail);
+        return userRepository.save(currentUser);
     }
 
     public void deleteUserForAdmin(Long adminId, Long userId) {
@@ -155,8 +168,8 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin cannot delete their own account");
         }
 
-        tokenBlacklistService.revokeUser(user.getUsername());
-        refreshTokenService.revokeUserSessions(user.getUsername());
+        tokenBlacklistService.revokeUser(user.getPhoneNumber());
+        refreshTokenService.revokeUserSessions(user.getPhoneNumber());
         userRepository.delete(user);
     }
 
@@ -171,35 +184,23 @@ public class UserService {
 
         currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(currentUser);
-        tokenBlacklistService.revokeUser(currentUser.getUsername());
-        refreshTokenService.revokeUserSessions(currentUser.getUsername());
+        tokenBlacklistService.revokeUser(currentUser.getPhoneNumber());
+        refreshTokenService.revokeUserSessions(currentUser.getPhoneNumber());
     }
 
-    private void validateRecoveryContacts(String email, String phoneNumber) {
-        if ((email == null || email.isBlank()) && (phoneNumber == null || phoneNumber.isBlank())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Either email or phone number is required");
+    private void assertUniqueContacts(String email, String phoneNumber, Long currentUserId) {
+        if (phoneNumber != null) {
+            userRepository.findByPhoneNumber(phoneNumber).ifPresent(existingUser -> {
+                if (!Objects.equals(existingUser.getId(), currentUserId)) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Phone number already exists");
+                }
+            });
         }
-    }
-
-    private void assertUniqueIdentity(String username, String email, String phoneNumber, Long currentUserId) {
-        userRepository.findByUsername(username.trim()).ifPresent(existingUser -> {
-            if (!Objects.equals(existingUser.getId(), currentUserId)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
-            }
-        });
 
         if (email != null) {
             userRepository.findByEmail(email).ifPresent(existingUser -> {
                 if (!Objects.equals(existingUser.getId(), currentUserId)) {
                     throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
-                }
-            });
-        }
-
-        if (phoneNumber != null) {
-            userRepository.findByPhoneNumber(phoneNumber).ifPresent(existingUser -> {
-                if (!Objects.equals(existingUser.getId(), currentUserId)) {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Phone number already exists");
                 }
             });
         }
