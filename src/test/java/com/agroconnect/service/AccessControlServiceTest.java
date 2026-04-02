@@ -4,7 +4,6 @@ import com.agroconnect.model.User;
 import com.agroconnect.model.enums.Role;
 import com.agroconnect.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,8 +29,8 @@ class AccessControlServiceTest {
 
     @InjectMocks AccessControlService accessControlService;
 
-    private void authenticateAs(String username) {
-        var auth = new UsernamePasswordAuthenticationToken(username, null, List.of());
+    private void authenticateAs(String phoneNumber) {
+        var auth = new UsernamePasswordAuthenticationToken(phoneNumber, null, List.of());
         SecurityContextHolder.setContext(new SecurityContextImpl(auth));
     }
 
@@ -44,9 +43,9 @@ class AccessControlServiceTest {
 
     @Test
     void requireAdmin_adminUser_returnsUser() {
-        User admin = User.builder().id(1L).username("admin").role(Role.ADMIN).build();
-        authenticateAs("admin");
-        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+        User admin = User.builder().id(1L).name("Admin").phoneNumber("+919999999999").role(Role.ADMIN).build();
+        authenticateAs("+919999999999");
+        when(userRepository.findByPhoneNumber("+919999999999")).thenReturn(Optional.of(admin));
 
         User result = accessControlService.requireAdmin(1L);
 
@@ -55,9 +54,9 @@ class AccessControlServiceTest {
 
     @Test
     void requireAdmin_nonAdminUser_throwsForbidden() {
-        User farmer = User.builder().id(2L).username("farmer1").role(Role.FARMER).build();
-        authenticateAs("farmer1");
-        when(userRepository.findByUsername("farmer1")).thenReturn(Optional.of(farmer));
+        User farmer = User.builder().id(2L).name("Farmer One").phoneNumber("+919876543210").role(Role.FARMER).build();
+        authenticateAs("+919876543210");
+        when(userRepository.findByPhoneNumber("+919876543210")).thenReturn(Optional.of(farmer));
 
         assertThatThrownBy(() -> accessControlService.requireAdmin(2L))
                 .isInstanceOf(ResponseStatusException.class)
@@ -69,9 +68,9 @@ class AccessControlServiceTest {
 
     @Test
     void requireCurrentUser_correctIdAndRole_returnsUser() {
-        User agent = User.builder().id(3L).username("agent1").role(Role.AGENT).build();
-        authenticateAs("agent1");
-        when(userRepository.findByUsername("agent1")).thenReturn(Optional.of(agent));
+        User agent = User.builder().id(3L).name("Agent One").phoneNumber("+919876543211").role(Role.AGENT).build();
+        authenticateAs("+919876543211");
+        when(userRepository.findByPhoneNumber("+919876543211")).thenReturn(Optional.of(agent));
 
         User result = accessControlService.requireCurrentUser(3L, Role.AGENT);
 
@@ -80,9 +79,9 @@ class AccessControlServiceTest {
 
     @Test
     void requireCurrentUser_wrongUserId_throwsForbidden() {
-        User agent = User.builder().id(3L).username("agent1").role(Role.AGENT).build();
-        authenticateAs("agent1");
-        when(userRepository.findByUsername("agent1")).thenReturn(Optional.of(agent));
+        User agent = User.builder().id(3L).name("Agent One").phoneNumber("+919876543211").role(Role.AGENT).build();
+        authenticateAs("+919876543211");
+        when(userRepository.findByPhoneNumber("+919876543211")).thenReturn(Optional.of(agent));
 
         assertThatThrownBy(() -> accessControlService.requireCurrentUser(99L, Role.AGENT))
                 .isInstanceOf(ResponseStatusException.class)
@@ -92,9 +91,9 @@ class AccessControlServiceTest {
 
     @Test
     void requireCurrentUser_wrongRole_throwsForbidden() {
-        User farmer = User.builder().id(4L).username("farmer1").role(Role.FARMER).build();
-        authenticateAs("farmer1");
-        when(userRepository.findByUsername("farmer1")).thenReturn(Optional.of(farmer));
+        User farmer = User.builder().id(4L).name("Farmer One").phoneNumber("+919876543212").role(Role.FARMER).build();
+        authenticateAs("+919876543212");
+        when(userRepository.findByPhoneNumber("+919876543212")).thenReturn(Optional.of(farmer));
 
         assertThatThrownBy(() -> accessControlService.requireCurrentUser(4L, Role.AGENT))
                 .isInstanceOf(ResponseStatusException.class)

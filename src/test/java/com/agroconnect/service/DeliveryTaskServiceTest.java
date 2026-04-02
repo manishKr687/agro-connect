@@ -46,8 +46,8 @@ class DeliveryTaskServiceTest {
 
     @BeforeEach
     void setUp() {
-        admin = User.builder().id(1L).username("admin").role(Role.ADMIN).build();
-        agent = User.builder().id(2L).username("agent1").role(Role.AGENT).build();
+        admin = User.builder().id(1L).name("Admin").phoneNumber("+919999999999").role(Role.ADMIN).build();
+        agent = User.builder().id(2L).name("Agent One").phoneNumber("+919876543210").role(Role.AGENT).build();
 
         availableHarvest = Harvest.builder()
                 .id(10L).cropName("Tomato").quantity(100.0)

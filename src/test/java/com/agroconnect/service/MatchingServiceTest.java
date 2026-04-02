@@ -34,7 +34,7 @@ class MatchingServiceTest {
 
     @BeforeEach
     void setUp() {
-        admin = User.builder().id(1L).username("admin").role(Role.ADMIN).build();
+        admin = User.builder().id(1L).name("Admin").phoneNumber("+919999999999").role(Role.ADMIN).build();
         when(accessControlService.requireAdmin(any())).thenReturn(admin);
     }
 

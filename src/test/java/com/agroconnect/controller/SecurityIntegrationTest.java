@@ -40,35 +40,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class SecurityIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private UserRepository userRepository;
+    @Autowired private BlacklistedTokenRepository blacklistedTokenRepository;
+    @Autowired private RevokedUserRepository revokedUserRepository;
+    @Autowired private LoginAttemptRecordRepository loginAttemptRecordRepository;
+    @Autowired private RefreshTokenSessionRepository refreshTokenSessionRepository;
+    @Autowired private PasswordResetChallengeRepository passwordResetChallengeRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private UserRepository userRepository;
+    @Value("${app.jwt.secret}") private String jwtSecret;
+    @Value("${app.jwt.issuer}") private String jwtIssuer;
 
-    @Autowired
-    private BlacklistedTokenRepository blacklistedTokenRepository;
-
-    @Autowired
-    private RevokedUserRepository revokedUserRepository;
-
-    @Autowired
-    private LoginAttemptRecordRepository loginAttemptRecordRepository;
-
-    @Autowired
-    private RefreshTokenSessionRepository refreshTokenSessionRepository;
-
-    @Autowired
-    private PasswordResetChallengeRepository passwordResetChallengeRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Value("${app.jwt.secret}")
-    private String jwtSecret;
-
-    @Value("${app.jwt.issuer}")
-    private String jwtIssuer;
+    private static final String ADMIN_PHONE = "+919999999999";
+    private static final String FARMER_PHONE = "+918888888888";
 
     @BeforeEach
     void setUp() {
@@ -80,17 +65,17 @@ class SecurityIntegrationTest {
         userRepository.deleteAll();
 
         userRepository.save(User.builder()
-                .username("admin_user")
+                .name("Admin User")
+                .phoneNumber(ADMIN_PHONE)
                 .email("admin@example.com")
-                .phoneNumber("+919999999999")
                 .password(passwordEncoder.encode("Password123"))
                 .role(Role.ADMIN)
                 .build());
 
         userRepository.save(User.builder()
-                .username("farmer_user")
+                .name("Farmer User")
+                .phoneNumber(FARMER_PHONE)
                 .email("farmer@example.com")
-                .phoneNumber("+918888888888")
                 .password(passwordEncoder.encode("Password123"))
                 .role(Role.FARMER)
                 .build());
@@ -104,7 +89,7 @@ class SecurityIntegrationTest {
 
     @Test
     void wrongRoleShouldFail() throws Exception {
-        MockCookie farmerCookie = loginAndExtractCookies("farmer_user", "Password123").authCookie();
+        MockCookie farmerCookie = loginAndExtractCookies(FARMER_PHONE, "Password123").authCookie();
 
         mockMvc.perform(get("/api/admins/1/users").cookie(farmerCookie))
                 .andExpect(status().isForbidden());
@@ -120,7 +105,7 @@ class SecurityIntegrationTest {
     @Test
     void expiredTokenShouldFail() throws Exception {
         String expiredToken = Jwts.builder()
-                .subject("admin_user")
+                .subject(ADMIN_PHONE)
                 .issuer(jwtIssuer)
                 .issuedAt(Date.from(Instant.now().minusSeconds(3600)))
                 .expiration(Date.from(Instant.now().minusSeconds(60)))
@@ -134,12 +119,12 @@ class SecurityIntegrationTest {
 
     @Test
     void loginAndLogoutShouldWork() throws Exception {
-        AuthCookies cookies = loginAndExtractCookies("admin_user", "Password123");
+        AuthCookies cookies = loginAndExtractCookies(ADMIN_PHONE, "Password123");
         MockCookie authCookie = cookies.authCookie();
 
         mockMvc.perform(get("/api/users/me").cookie(authCookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("admin_user"))
+                .andExpect(jsonPath("$.name").value("Admin User"))
                 .andExpect(jsonPath("$.role").value("ADMIN"));
 
         MvcResult logoutResult = mockMvc.perform(post("/api/auth/logout")
@@ -159,7 +144,7 @@ class SecurityIntegrationTest {
 
     @Test
     void refreshShouldRotateCookiesAndKeepSessionValid() throws Exception {
-        AuthCookies cookies = loginAndExtractCookies("admin_user", "Password123");
+        AuthCookies cookies = loginAndExtractCookies(ADMIN_PHONE, "Password123");
 
         MvcResult refreshResult = mockMvc.perform(post("/api/auth/refresh")
                         .cookie(cookies.refreshCookie()))
@@ -177,7 +162,7 @@ class SecurityIntegrationTest {
 
         mockMvc.perform(get("/api/users/me").cookie(refreshedAuthCookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("admin_user"));
+                .andExpect(jsonPath("$.name").value("Admin User"));
 
         mockMvc.perform(post("/api/auth/refresh").cookie(cookies.refreshCookie()))
                 .andExpect(status().isUnauthorized());
@@ -185,7 +170,7 @@ class SecurityIntegrationTest {
 
     @Test
     void changePasswordShouldClearCookiesAndRequireNewLogin() throws Exception {
-        AuthCookies cookies = loginAndExtractCookies("admin_user", "Password123");
+        AuthCookies cookies = loginAndExtractCookies(ADMIN_PHONE, "Password123");
 
         mockMvc.perform(post("/api/users/me/change-password")
                         .cookie(cookies.authCookie())
@@ -207,12 +192,12 @@ class SecurityIntegrationTest {
         mockMvc.perform(post("/api/auth/refresh").cookie(cookies.refreshCookie()))
                 .andExpect(status().isUnauthorized());
 
-        loginAndExtractCookies("admin_user", "NewPassword123");
+        loginAndExtractCookies(ADMIN_PHONE, "NewPassword123");
     }
 
     @Test
     void forgotPasswordWithEmailShouldResetPasswordAndRevokeOldSessions() throws Exception {
-        AuthCookies cookies = loginAndExtractCookies("admin_user", "Password123");
+        AuthCookies cookies = loginAndExtractCookies(ADMIN_PHONE, "Password123");
 
         MvcResult forgotResult = mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -246,7 +231,7 @@ class SecurityIntegrationTest {
         mockMvc.perform(post("/api/auth/refresh").cookie(cookies.refreshCookie()))
                 .andExpect(status().isUnauthorized());
 
-        loginAndExtractCookies("admin_user", "RecoveredPassword123");
+        loginAndExtractCookies(ADMIN_PHONE, "RecoveredPassword123");
     }
 
     @Test
@@ -256,9 +241,9 @@ class SecurityIntegrationTest {
                         .content("""
                                 {
                                   "channel": "SMS",
-                                  "identifier": "+918888888888"
+                                  "identifier": "%s"
                                 }
-                                """))
+                                """.formatted(FARMER_PHONE)))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.previewOtp").isNotEmpty())
                 .andReturn();
@@ -270,25 +255,25 @@ class SecurityIntegrationTest {
                         .content("""
                                 {
                                   "channel": "SMS",
-                                  "identifier": "+918888888888",
+                                  "identifier": "%s",
                                   "otp": "%s",
                                   "newPassword": "RecoveredSms123"
                                 }
-                                """.formatted(previewOtp)))
+                                """.formatted(FARMER_PHONE, previewOtp)))
                 .andExpect(status().isNoContent());
 
-        loginAndExtractCookies("farmer_user", "RecoveredSms123");
+        loginAndExtractCookies(FARMER_PHONE, "RecoveredSms123");
     }
 
-    private AuthCookies loginAndExtractCookies(String username, String password) throws Exception {
+    private AuthCookies loginAndExtractCookies(String phoneNumber, String password) throws Exception {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "username": "%s",
+                                  "phoneNumber": "%s",
                                   "password": "%s"
                                 }
-                                """.formatted(username, password)))
+                                """.formatted(phoneNumber, password)))
                 .andExpect(status().isOk())
                 .andExpect(cookie().exists("agroconnect_auth"))
                 .andExpect(cookie().exists("agroconnect_refresh"))
@@ -309,8 +294,7 @@ class SecurityIntegrationTest {
         return new MockCookie(name, cookie.getValue());
     }
 
-    private record AuthCookies(MockCookie authCookie, MockCookie refreshCookie) {
-    }
+    private record AuthCookies(MockCookie authCookie, MockCookie refreshCookie) {}
 
     private static final class JsonTestHelper {
         private static String readString(String json, String fieldName) {
