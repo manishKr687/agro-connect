@@ -28,8 +28,8 @@ public class ProductionSecurityValidator {
     @Value("${app.jwt.issuer:}")
     private String jwtIssuer;
 
-    @Value("${app.bootstrap.admin.username:}")
-    private String bootstrapAdminUsername;
+    @Value("${app.bootstrap.admin.phone-number:}")
+    private String bootstrapAdminPhoneNumber;
 
     @Value("${app.bootstrap.admin.password:}")
     private String bootstrapAdminPassword;
@@ -112,12 +112,12 @@ public class ProductionSecurityValidator {
     }
 
     private void validateBootstrapAdmin() {
-        boolean usernameSet = bootstrapAdminUsername != null && !bootstrapAdminUsername.isBlank();
+        boolean phoneNumberSet = bootstrapAdminPhoneNumber != null && !bootstrapAdminPhoneNumber.isBlank();
         boolean passwordSet = bootstrapAdminPassword != null && !bootstrapAdminPassword.isBlank();
 
-        if (usernameSet != passwordSet) {
+        if (phoneNumberSet != passwordSet) {
             throw new IllegalStateException(
-                    "BOOTSTRAP_ADMIN_USERNAME and BOOTSTRAP_ADMIN_PASSWORD must both be set, or both be blank.");
+                    "BOOTSTRAP_ADMIN_PHONE_NUMBER and BOOTSTRAP_ADMIN_PASSWORD must both be set, or both be blank.");
         }
 
         if (passwordSet && bootstrapAdminPassword.length() < MIN_BOOTSTRAP_PASSWORD_LENGTH) {

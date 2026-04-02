@@ -48,6 +48,7 @@ C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repo
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\HarvestRepository.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\PasswordResetNotificationService.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\CancelTaskRequest.java
+C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\UpdateProfileRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\repository\UserRepository.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\dto\ForgotPasswordRequest.java
 C:\Users\manis\Documents\agro-connect\backend\src\main\java\com\agroconnect\security\CachedBodyHttpServletRequest.java
