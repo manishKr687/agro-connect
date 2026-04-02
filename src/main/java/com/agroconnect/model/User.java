@@ -29,9 +29,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Unique login handle. Validated to 3–50 alphanumeric/underscore characters. */
-    @Column(unique = true, nullable = false)
-    private String username;
+    /** Display name shown in the UI. */
+    @Column(nullable = false)
+    private String name;
 
     /** BCrypt-hashed password. Never serialised into API responses. */
     @Column(nullable = false)
@@ -42,8 +42,8 @@ public class User {
     @Column(unique = true)
     private String email;
 
-    /** Recovery phone number used for password reset OTPs. */
-    @Column(name = "phone_number", unique = true)
+    /** Phone number used as the login handle and for password reset OTPs. */
+    @Column(name = "phone_number", unique = true, nullable = false)
     private String phoneNumber;
 
     /** Determines what actions this user can perform. Stored as a string in the DB. */
