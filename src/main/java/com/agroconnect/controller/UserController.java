@@ -1,6 +1,7 @@
 package com.agroconnect.controller;
 
 import com.agroconnect.dto.ChangePasswordRequest;
+import com.agroconnect.dto.UpdateProfileRequest;
 import com.agroconnect.model.User;
 import com.agroconnect.security.AuthCookieService;
 import com.agroconnect.service.AccessControlService;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +36,11 @@ public class UserController {
     @GetMapping("/me")
     public User me() {
         return accessControlService.getCurrentUser();
+    }
+
+    @PatchMapping("/me/profile")
+    public User updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
+        return userService.updateProfile(accessControlService.getCurrentUser(), request);
     }
 
     @PostMapping("/me/change-password")
