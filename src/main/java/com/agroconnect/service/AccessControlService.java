@@ -39,7 +39,7 @@ public class AccessControlService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
 
-        return userRepository.findByUsername(authentication.getName())
+        return userRepository.findByPhoneNumber(authentication.getName())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated user not found"));
     }
 

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 
 /**
- * Tracks failed login attempts per username and persists lockout state in the database.
+ * Tracks failed login attempts per phoneNumber and persists lockout state in the database.
  */
 @Service
 @RequiredArgsConstructor
@@ -24,11 +24,11 @@ public class LoginAttemptService {
 
     private final LoginAttemptRecordRepository loginAttemptRecordRepository;
 
-    public void recordFailure(String username) {
+    public void recordFailure(String phoneNumber) {
         Instant now = Instant.now();
-        LoginAttemptRecord record = loginAttemptRecordRepository.findById(username)
+        LoginAttemptRecord record = loginAttemptRecordRepository.findById(phoneNumber)
                 .orElseGet(() -> LoginAttemptRecord.builder()
-                        .username(username)
+                        .phoneNumber(phoneNumber)
                         .failureCount(0)
                         .updatedAt(now)
                         .build());
@@ -44,26 +44,26 @@ public class LoginAttemptService {
         loginAttemptRecordRepository.save(record);
     }
 
-    public void recordSuccess(String username) {
-        loginAttemptRecordRepository.deleteById(username);
+    public void recordSuccess(String phoneNumber) {
+        loginAttemptRecordRepository.deleteById(phoneNumber);
     }
 
-    public boolean isLocked(String username) {
-        LoginAttemptRecord record = loginAttemptRecordRepository.findById(username).orElse(null);
+    public boolean isLocked(String phoneNumber) {
+        LoginAttemptRecord record = loginAttemptRecordRepository.findById(phoneNumber).orElse(null);
         if (record == null || record.getLockedUntil() == null) {
             return false;
         }
 
         if (Instant.now().isAfter(record.getLockedUntil())) {
-            loginAttemptRecordRepository.deleteById(username);
+            loginAttemptRecordRepository.deleteById(phoneNumber);
             return false;
         }
 
         return true;
     }
 
-    public long secondsUntilUnlock(String username) {
-        LoginAttemptRecord record = loginAttemptRecordRepository.findById(username).orElse(null);
+    public long secondsUntilUnlock(String phoneNumber) {
+        LoginAttemptRecord record = loginAttemptRecordRepository.findById(phoneNumber).orElse(null);
         if (record == null || record.getLockedUntil() == null) {
             return 0;
         }

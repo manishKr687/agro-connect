@@ -20,8 +20,8 @@ import java.time.Instant;
 public class RevokedUser {
 
     @Id
-    @Column(nullable = false, length = 50)
-    private String username;
+    @Column(name = "phone_number", nullable = false, length = 20)
+    private String phoneNumber;
 
     @Column(name = "revoked_at", nullable = false)
     private Instant revokedAt;
