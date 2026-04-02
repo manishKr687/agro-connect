@@ -27,8 +27,8 @@ ALTER TABLE users DROP COLUMN IF EXISTS username;
 
 -- Update revoked_users: rename username -> phone_number
 ALTER TABLE revoked_users RENAME COLUMN username TO phone_number;
-ALTER TABLE revoked_users ALTER COLUMN phone_number VARCHAR(20);
+ALTER TABLE revoked_users ALTER COLUMN phone_number TYPE VARCHAR(20);
 
 -- Update login_attempts: rename username -> phone_number
 ALTER TABLE login_attempts RENAME COLUMN username TO phone_number;
-ALTER TABLE login_attempts ALTER COLUMN phone_number VARCHAR(20);
+ALTER TABLE login_attempts ALTER COLUMN phone_number TYPE VARCHAR(20);

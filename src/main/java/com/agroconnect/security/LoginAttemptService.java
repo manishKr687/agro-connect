@@ -5,6 +5,7 @@ import com.agroconnect.repository.LoginAttemptRecordRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -72,6 +73,7 @@ public class LoginAttemptService {
         return Math.max(remaining, 0);
     }
 
+    @Transactional
     @Scheduled(fixedDelay = 3_600_000)
     public void purgeExpired() {
         loginAttemptRecordRepository.deleteUnlockedOrExpired(Instant.now());

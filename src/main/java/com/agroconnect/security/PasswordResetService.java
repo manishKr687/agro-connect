@@ -8,11 +8,11 @@ import com.agroconnect.model.User;
 import com.agroconnect.model.enums.PasswordResetChannel;
 import com.agroconnect.repository.PasswordResetChallengeRepository;
 import com.agroconnect.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -123,6 +123,7 @@ public class PasswordResetService {
         refreshTokenService.revokeUserSessions(user.getPhoneNumber());
     }
 
+    @Transactional
     @Scheduled(fixedDelay = 3_600_000)
     public void purgeExpired() {
         passwordResetChallengeRepository.deleteByExpiresAtBefore(Instant.now());
