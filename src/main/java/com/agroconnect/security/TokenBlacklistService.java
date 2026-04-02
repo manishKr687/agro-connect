@@ -31,15 +31,15 @@ public class TokenBlacklistService {
         return blacklistedTokenRepository.existsById(token);
     }
 
-    public void revokeUser(String username) {
+    public void revokeUser(String phoneNumber) {
         revokedUserRepository.save(RevokedUser.builder()
-                .username(username)
+                .phoneNumber(phoneNumber)
                 .revokedAt(Instant.now())
                 .build());
     }
 
-    public boolean isUserRevoked(String username, Instant tokenIssuedAt) {
-        return revokedUserRepository.findById(username)
+    public boolean isUserRevoked(String phoneNumber, Instant tokenIssuedAt) {
+        return revokedUserRepository.findById(phoneNumber)
                 .map(RevokedUser::getRevokedAt)
                 .filter(tokenIssuedAt::isBefore)
                 .isPresent();

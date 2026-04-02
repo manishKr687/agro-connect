@@ -60,8 +60,8 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public void revokeUserSessions(String username) {
-        refreshTokenSessionRepository.deleteByUserUsername(username);
+    public void revokeUserSessions(String phoneNumber) {
+        refreshTokenSessionRepository.deleteByUserPhoneNumber(phoneNumber);
     }
 
     @Transactional
