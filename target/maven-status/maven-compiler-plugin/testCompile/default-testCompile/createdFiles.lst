@@ -1,4 +1,7 @@
+com\agroconnect\controller\SecurityIntegrationTest$JsonTestHelper.class
 com\agroconnect\service\AccessControlServiceTest.class
 com\agroconnect\service\DeliveryTaskServiceTest.class
+com\agroconnect\controller\SecurityIntegrationTest.class
 com\agroconnect\service\MatchingServiceTest.class
 com\agroconnect\service\UserServiceTest.class
+com\agroconnect\controller\SecurityIntegrationTest$AuthCookies.class

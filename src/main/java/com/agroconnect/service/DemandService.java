@@ -182,13 +182,13 @@ public class DemandService {
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "No active task found for this demand"));
 
-        if (demand.getRequestedQuantity() != null && task.getHarvest().getQuantity() < demand.getRequestedQuantity()) {
+        if (task.getHarvest().getQuantity() < demand.getRequestedQuantity()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Requested quantity exceeds the reserved harvest quantity. Cancel and rematch instead.");
         }
 
-        demand.setQuantity(demand.getRequestedQuantity() != null ? demand.getRequestedQuantity() : demand.getQuantity());
-        demand.setRequiredDate(demand.getRequestedRequiredDate() != null ? demand.getRequestedRequiredDate() : demand.getRequiredDate());
-        demand.setTargetPrice(demand.getRequestedTargetPrice() != null ? demand.getRequestedTargetPrice() : demand.getTargetPrice());
+        demand.setQuantity(demand.getRequestedQuantity());
+        demand.setRequiredDate(demand.getRequestedRequiredDate());
+        demand.setTargetPrice(demand.getRequestedTargetPrice());
         clearDemandChangeRequest(demand);
         return demandRepository.save(demand);
     }
