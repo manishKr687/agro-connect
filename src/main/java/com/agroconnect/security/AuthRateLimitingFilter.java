@@ -106,11 +106,32 @@ public class AuthRateLimitingFilter extends OncePerRequestFilter {
         response.getWriter().write("{\"error\": \"Too many requests. Please try again later.\"}");
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+    /**
+     * Extracts the real client IP from the request.
+     *
+     * <p>Reads {@code X-Forwarded-For} only when the direct TCP connection ({@code remoteAddr})
+     * is a private/loopback address — i.e. the request arrived through a local reverse proxy
+     * rather than directly from the internet. This prevents clients from spoofing the header
+     * to bypass per-IP rate limiting.
+     */
+    public static String getClientIp(HttpServletRequest request) {
+        String remoteAddr = request.getRemoteAddr();
+        if (isTrustedProxy(remoteAddr)) {
+            String forwarded = request.getHeader("X-Forwarded-For");
+            if (forwarded != null && !forwarded.isBlank()) {
+                return forwarded.split(",")[0].trim();
+            }
         }
-        return request.getRemoteAddr();
+        return remoteAddr;
+    }
+
+    private static boolean isTrustedProxy(String remoteAddr) {
+        return remoteAddr != null && (
+                remoteAddr.startsWith("10.")
+                || remoteAddr.startsWith("172.")
+                || remoteAddr.startsWith("192.168.")
+                || remoteAddr.equals("127.0.0.1")
+                || remoteAddr.equals("0:0:0:0:0:0:0:1")
+        );
     }
 }

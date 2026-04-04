@@ -2,6 +2,7 @@ package com.agroconnect.controller;
 
 import com.agroconnect.dto.CropDemandSummary;
 import com.agroconnect.repository.DemandRepository;
+import com.agroconnect.security.AuthRateLimitingFilter;
 import com.agroconnect.service.DemandEventService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -50,10 +51,6 @@ public class PublicDashboardController {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return AuthRateLimitingFilter.getClientIp(request);
     }
 }

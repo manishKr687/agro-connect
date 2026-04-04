@@ -66,12 +66,8 @@ public class HarvestService {
 
     public Harvest updateHarvest(Long farmerId, Long harvestId, HarvestRequest request) {
         User farmer = accessControlService.requireCurrentUser(farmerId, Role.FARMER);
-        Harvest harvest = harvestRepository.findById(harvestId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Harvest not found"));
+        Harvest harvest = requireOwnedHarvest(harvestId, farmer);
 
-        if (!harvest.getFarmer().getId().equals(farmer.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Harvest does not belong to this farmer");
-        }
         if (harvest.getStatus() != Harvest.Status.AVAILABLE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only available harvests can be edited");
         }
@@ -85,12 +81,8 @@ public class HarvestService {
 
     public void deleteHarvest(Long farmerId, Long harvestId) {
         User farmer = accessControlService.requireCurrentUser(farmerId, Role.FARMER);
-        Harvest harvest = harvestRepository.findById(harvestId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Harvest not found"));
+        Harvest harvest = requireOwnedHarvest(harvestId, farmer);
 
-        if (!harvest.getFarmer().getId().equals(farmer.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Harvest does not belong to this farmer");
-        }
         if (harvest.getStatus() != Harvest.Status.AVAILABLE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only available harvests can be deleted");
         }
@@ -110,12 +102,7 @@ public class HarvestService {
      */
     public Harvest requestWithdrawal(Long farmerId, Long harvestId, HarvestWithdrawalRequest request) {
         User farmer = accessControlService.requireCurrentUser(farmerId, Role.FARMER);
-        Harvest harvest = harvestRepository.findById(harvestId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Harvest not found"));
-
-        if (!harvest.getFarmer().getId().equals(farmer.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Harvest does not belong to this farmer");
-        }
+        Harvest harvest = requireOwnedHarvest(harvestId, farmer);
         if (harvest.getStatus() != Harvest.Status.RESERVED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only reserved harvests can request withdrawal");
         }
@@ -146,5 +133,14 @@ public class HarvestService {
 
         harvest.setStatus(request.getStatus());
         return harvestRepository.save(harvest);
+    }
+
+    private Harvest requireOwnedHarvest(Long harvestId, User farmer) {
+        Harvest harvest = harvestRepository.findById(harvestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Harvest not found"));
+        if (!harvest.getFarmer().getId().equals(farmer.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Harvest does not belong to this farmer");
+        }
+        return harvest;
     }
 }

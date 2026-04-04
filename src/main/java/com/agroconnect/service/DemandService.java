@@ -67,12 +67,8 @@ public class DemandService {
 
     public Demand updateDemand(Long retailerId, Long demandId, DemandRequest request) {
         User retailer = accessControlService.requireCurrentUser(retailerId, Role.RETAILER);
-        Demand demand = demandRepository.findById(demandId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demand not found"));
+        Demand demand = requireOwnedDemand(demandId, retailer);
 
-        if (!demand.getRetailer().getId().equals(retailer.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Demand does not belong to this retailer");
-        }
         if (demand.getStatus() != Demand.Status.OPEN) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only open demands can be edited directly");
         }
@@ -86,12 +82,8 @@ public class DemandService {
 
     public void deleteDemand(Long retailerId, Long demandId) {
         User retailer = accessControlService.requireCurrentUser(retailerId, Role.RETAILER);
-        Demand demand = demandRepository.findById(demandId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demand not found"));
+        Demand demand = requireOwnedDemand(demandId, retailer);
 
-        if (!demand.getRetailer().getId().equals(retailer.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Demand does not belong to this retailer");
-        }
         if (demand.getStatus() != Demand.Status.OPEN) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only open demands can be deleted");
         }
@@ -113,12 +105,7 @@ public class DemandService {
      */
     public Demand requestDemandChange(Long retailerId, Long demandId, DemandChangeRequest request) {
         User retailer = accessControlService.requireCurrentUser(retailerId, Role.RETAILER);
-        Demand demand = demandRepository.findById(demandId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demand not found"));
-
-        if (!demand.getRetailer().getId().equals(retailer.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Demand does not belong to this retailer");
-        }
+        Demand demand = requireOwnedDemand(demandId, retailer);
         if (demand.getStatus() != Demand.Status.RESERVED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only reserved demands can request changes");
         }
@@ -205,6 +192,15 @@ public class DemandService {
         demand.setRequestedRequiredDate(null);
         demand.setRequestedTargetPrice(null);
         demand.setChangeRequestReason(null);
+    }
+
+    private Demand requireOwnedDemand(Long demandId, User retailer) {
+        Demand demand = demandRepository.findById(demandId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demand not found"));
+        if (!demand.getRetailer().getId().equals(retailer.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Demand does not belong to this retailer");
+        }
+        return demand;
     }
 
     private void broadcastOpenDemands() {
