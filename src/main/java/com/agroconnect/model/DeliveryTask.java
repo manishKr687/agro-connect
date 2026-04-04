@@ -15,6 +15,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Represents a delivery task that links a matched harvest to a demand and assigns
@@ -41,6 +42,14 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class DeliveryTask {
+
+    /** Task statuses that represent an in-progress delivery (not yet terminal). */
+    public static final List<Status> ACTIVE_STATUSES = List.of(
+            Status.ASSIGNED,
+            Status.ACCEPTED,
+            Status.PICKED_UP,
+            Status.IN_TRANSIT
+    );
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

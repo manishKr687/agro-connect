@@ -55,13 +55,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class DeliveryTaskService {
-    /** Task statuses that represent an in-progress delivery (not yet terminal). */
-    private static final List<DeliveryTask.Status> ACTIVE_TASK_STATUSES = List.of(
-            DeliveryTask.Status.ASSIGNED,
-            DeliveryTask.Status.ACCEPTED,
-            DeliveryTask.Status.PICKED_UP,
-            DeliveryTask.Status.IN_TRANSIT
-    );
+    private static final List<DeliveryTask.Status> ACTIVE_TASK_STATUSES = DeliveryTask.ACTIVE_STATUSES;
 
     private final DeliveryTaskRepository deliveryTaskRepository;
     private final HarvestRepository harvestRepository;

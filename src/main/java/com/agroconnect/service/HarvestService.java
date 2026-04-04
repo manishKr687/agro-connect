@@ -30,13 +30,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class HarvestService {
-    /** Task statuses that indicate an active in-progress delivery. */
-    private static final List<DeliveryTask.Status> ACTIVE_TASK_STATUSES = List.of(
-            DeliveryTask.Status.ASSIGNED,
-            DeliveryTask.Status.ACCEPTED,
-            DeliveryTask.Status.PICKED_UP,
-            DeliveryTask.Status.IN_TRANSIT
-    );
+    private static final List<DeliveryTask.Status> ACTIVE_TASK_STATUSES = DeliveryTask.ACTIVE_STATUSES;
 
     private final HarvestRepository harvestRepository;
     private final DeliveryTaskRepository deliveryTaskRepository;
